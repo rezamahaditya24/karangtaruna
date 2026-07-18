@@ -3,3 +3,4 @@ data.db*
 .env
 uploads/*
 !uploads/.gitkeep
+setup-*.js

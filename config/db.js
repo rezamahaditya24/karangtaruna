@@ -4,7 +4,53 @@ require('dotenv').config();
 
 let db;
 
-if (process.env.MYSQL_URL) {
+if (process.env.DATABASE_URL) {
+  // ========== PostgreSQL (Supabase / Render) ==========
+  const { Pool } = require('pg');
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  function convert(sql, params) {
+    let i = 0;
+    const text = sql.replace(/\?/g, () => `$${++i}`);
+    return { text, values: params || [] };
+  }
+
+  function isInsertReturning(sql) {
+    const upper = sql.trim().toUpperCase();
+    return upper.startsWith('INSERT') && !upper.includes('RETURNING');
+  }
+
+  db = {
+    query: async (sql, params) => {
+      const { text, values } = convert(sql, params);
+      const result = await pool.query(text, values);
+      return result.rows;
+    },
+    get: async (sql, params) => {
+      const { text, values } = convert(sql, params);
+      const result = await pool.query(text, values);
+      return result.rows[0] || null;
+    },
+    run: async (sql, params) => {
+      const { text, values } = convert(sql, params);
+      let finalSql = text;
+      let finalValues = values;
+      if (isInsertReturning(text)) {
+        const returning = text.trim().endsWith(')') ? ' RETURNING id' : '';
+        finalSql = text + returning;
+      }
+      const result = await pool.query(finalSql, finalValues);
+      const row = result.rows?.[0];
+      return { lastInsertRowid: row?.id || 0, changes: result.rowCount || 0 };
+    },
+    exec: async (sql) => { await pool.query(sql); }
+  };
+
+} else if (process.env.MYSQL_URL) {
   // ========== MySQL for Railway ==========
   const mysql = require('mysql2/promise');
   const pool = mysql.createPool(process.env.MYSQL_URL);
@@ -22,114 +68,8 @@ if (process.env.MYSQL_URL) {
       const [result] = await pool.query(sql, params);
       return { lastInsertRowid: result.insertId, changes: result.affectedRows };
     },
-    exec: async (sql) => {
-      await pool.query(sql);
-    }
+    exec: async (sql) => { await pool.query(sql); }
   };
-
-  // Initialize tables for MySQL
-  (async () => {
-    try {
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          username VARCHAR(50) NOT NULL UNIQUE,
-          password VARCHAR(255) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS berita (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          judul VARCHAR(255) NOT NULL,
-          isi TEXT,
-          tanggal DATE,
-          gambar VARCHAR(255),
-          status ENUM('publish','draft') DEFAULT 'publish',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS galeri (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          judul VARCHAR(255),
-          gambar VARCHAR(255) NOT NULL,
-          deskripsi TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS program (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          icon VARCHAR(50),
-          judul VARCHAR(255) NOT NULL,
-          deskripsi TEXT,
-          jadwal VARCHAR(255),
-          tipe VARCHAR(20) DEFAULT 'rutin',
-          tanggal_mulai DATE,
-          tanggal_selesai DATE,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS umkm (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          nama_usaha VARCHAR(255) NOT NULL,
-          pemilik VARCHAR(255),
-          kategori VARCHAR(50),
-          deskripsi TEXT,
-          no_hp VARCHAR(20),
-          gambar VARCHAR(255),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS kas (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          tanggal DATE NOT NULL,
-          deskripsi VARCHAR(255),
-          kategori VARCHAR(100),
-          pemasukan DECIMAL(15,2) DEFAULT 0,
-          pengeluaran DECIMAL(15,2) DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS pengurus (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          nama VARCHAR(255) NOT NULL,
-          jabatan VARCHAR(100),
-          foto VARCHAR(255),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS pendaftar (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          nama_lengkap VARCHAR(255) NOT NULL,
-          usia INT,
-          no_hp VARCHAR(20),
-          alamat TEXT,
-          pekerjaan VARCHAR(255),
-          alasan_bergabung TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-      `);
-
-      // Seed admin user
-      const existing = await db.get('SELECT id FROM users WHERE username = ?', ['admin']);
-      if (!existing) {
-        const salt = bcrypt.genSaltSync(10);
-        const hash = bcrypt.hashSync('admin123', salt);
-        await db.run('INSERT INTO users (username, password) VALUES (?, ?)', ['admin', hash]);
-        console.log('Default admin user created: admin / admin123');
-      }
-      console.log('MySQL database ready!');
-    } catch (err) {
-      console.error('Database init error:', err.message);
-    }
-  })();
 
 } else {
   // ========== SQLite for Local Development ==========
