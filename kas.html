@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Transparansi kas Karang Taruna Manunggal Bhakti">
+  <title>Kas — Kar-Tar Manunggal Bhakti</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar-logo">
+        <img src="assets/logo.svg" alt="Logo Karang Taruna Manunggal Bhakti">
+        <span class="navbar-logo-text">Kar-Tar <span>Manunggal Bhakti</span></span>
+      </a>
+      <div class="navbar-links">
+        <a href="index.html">Beranda</a>
+        <a href="profil.html">Profil</a>
+        <a href="program.html">Program</a>
+        <a href="galeri.html">Galeri</a>
+        <a href="berita.html">Berita</a>
+        <a href="umkm.html">UMKM</a>
+        <a href="kas.html" class="active">Kas</a>
+        <a href="daftar.html">Daftar</a>
+        <a href="kontak.html">Kontak</a>
+      </div>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>Transparansi Kas</h1>
+    <p>Laporan pemasukan dan pengeluaran dana organisasi secara terbuka</p>
+    <div class="page-header-wave"></div>
+  </div>
+
+  <!-- SALDO SAAT INI -->
+  <section>
+    <div class="container">
+      <div class="kas-saldo fade-in">
+        <div class="saldo-label">Saldo Kas Saat Ini</div>
+        <div class="saldo-nominal" id="kasSaldo">Rp 0</div>
+        <div class="saldo-tanggal" id="kasTanggal"></div>
+      </div>
+
+      <div class="kas-ringkasan" style="margin-bottom: 32px;" id="kasRingkasan">
+        <div class="card fade-in"><div class="label">Total Pemasukan</div><div class="nominal" style="color: #2e7d32;" id="kasPemasukan">Rp 0</div></div>
+        <div class="card fade-in"><div class="label">Total Pengeluaran</div><div class="nominal" style="color: var(--color-primary);" id="kasPengeluaran">Rp 0</div></div>
+        <div class="card fade-in"><div class="label">Jumlah Transaksi</div><div class="nominal" id="kasJumlah">0</div></div>
+      </div>
+
+      <!-- Tabel Kas -->
+      <div class="kas-tabel fade-in">
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Keterangan</th>
+              <th>Kategori</th>
+              <th>Pemasukan</th>
+              <th>Pengeluaran</th>
+            </tr>
+          </thead>
+          <tbody id="kasTabel">
+            <div class="loading" style="padding:20px;text-align:center"><div class="spinner"></div><p>Memuat transaksi...</p></div>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <img src="assets/logo.svg" alt="Logo Karang Taruna Manunggal Bhakti">
+            <div class="footer-brand-text">
+              <h4>Karang Taruna Manunggal Bhakti</h4>
+              <p>Desa Dadaptulis Dalam</p>
+            </div>
+          </div>
+          <p>Wadah pemuda desa yang aktif bergerak di bidang sosial, olahraga, seni, dan pemberdayaan masyarakat.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Navigasi</h4>
+          <a href="index.html">Beranda</a>
+          <a href="profil.html">Profil</a>
+          <a href="program.html">Program Kerja</a>
+          <a href="galeri.html">Galeri</a>
+          <a href="berita.html">Berita</a>
+          <a href="umkm.html">UMKM</a>
+          <a href="kas.html">Transparansi Kas</a>
+          <a href="daftar.html">Pendaftaran</a>
+        </div>
+        <div class="footer-sosmed">
+          <h4>Ikuti Kami</h4>
+          <div class="social-icons">
+            <a href="#" title="WhatsApp" target="_blank">WA</a>
+            <a href="#" title="Instagram" target="_blank">IG</a>
+            <a href="#" title="Facebook" target="_blank">FB</a>
+            <a href="#" title="YouTube" target="_blank">YT</a>
+          </div>
+          <p style="margin-top: 16px; font-size: 0.82rem;">Kontak: 08xx-xxxx-xxxx<br>Dadaptulis Dalam</p>
+        </div>
+      </div>
+      <div class="footer-bottom">&copy; 2026 Karang Taruna Manunggal Bhakti — Desa Dadaptulis Dalam</div>
+    </div>
+  </footer>
+
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close">&times;</button>
+    <img id="lightbox-img" src="" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+  <script src="js/main.js"></script>
+</body>
+</html>

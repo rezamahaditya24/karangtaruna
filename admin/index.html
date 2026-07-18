@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Karang Taruna</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Login -->
+  <div id="loginPage" class="login-page">
+    <div class="login-box">
+      <h1>Admin Panel</h1>
+      <p>Karang Taruna Manunggal Bhakti</p>
+      <div id="loginError" class="error-msg"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;justify-content:center;font-size:15px">
+          Masuk
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Overlay mobile -->
+  <div id="overlay" class="overlay"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="brand">
+      <h2>Karang Taruna</h2>
+      <p>Manunggal Bhakti</p>
+    </div>
+    <nav>
+      <a href="#dashboard" class="active" data-page="dashboard"><span class="icon">📊</span> Dashboard</a>
+      <a href="#berita" data-page="berita"><span class="icon">📰</span> Berita</a>
+      <a href="#galeri" data-page="galeri"><span class="icon">🖼️</span> Galeri</a>
+      <a href="#program" data-page="program"><span class="icon">📋</span> Program Kerja</a>
+      <a href="#umkm" data-page="umkm"><span class="icon">🏪</span> UMKM</a>
+      <a href="#kas" data-page="kas"><span class="icon">💰</span> Kas</a>
+      <a href="#pengurus" data-page="pengurus"><span class="icon">👥</span> Pengurus</a>
+      <a href="#pendaftar" data-page="pendaftar"><span class="icon">📝</span> Pendaftar</a>
+    </nav>
+    <div class="logout-btn">
+      <a href="#" id="logoutBtn"><span class="icon">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <button class="hamburger" id="hamburgerBtn">☰</button>
+        <h1 id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="user-info">
+        <span>Halo, <strong id="displayUsername">Admin</strong></span>
+      </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="page-dashboard" class="page-section active">
+      <div class="stats-grid" id="dashboardStats">
+        <div class="stat-card"><div class="stat-icon">📰</div><div class="stat-number" id="statBerita">0</div><div class="stat-label">Total Berita</div></div>
+        <div class="stat-card"><div class="stat-icon">🖼️</div><div class="stat-number" id="statGaleri">0</div><div class="stat-label">Total Galeri</div></div>
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-number" id="statProgram">0</div><div class="stat-label">Program Kerja</div></div>
+        <div class="stat-card"><div class="stat-icon">🏪</div><div class="stat-number" id="statUmkm">0</div><div class="stat-label">UMKM Binaan</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" id="statKasSaldo">Rp 0</div><div class="stat-label">Saldo Kas</div></div>
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="statPengurus">0</div><div class="stat-label">Pengurus</div></div>
+        <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-number" id="statPendaftar">0</div><div class="stat-label">Pendaftar</div></div>
+      </div>
+    </div>
+
+    <!-- Berita Page -->
+    <div id="page-berita" class="page-section">
+      <div class="card">
+        <div class="card-header"><h2>Daftar Berita</h2><button class="btn btn-primary" onclick="openForm('berita')">+ Tambah Berita</button></div>
+        <div class="table-container" id="beritaTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
+      </div>
+    </div>
+
+    <!-- Galeri Page -->
+    <div id="page-galeri" class="page-section">
+      <div class="card">
+        <div class="card-header"><h2>Galeri Foto</h2><button class="btn btn-primary" onclick="openForm('galeri')">+ Tambah Foto</button></div>
+        <div id="galeriContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
+      </div>
+    </div>
+
+    <!-- Program Page -->
+    <div id="page-program" class="page-section">
+      <div class="card">
+        <div class="card-header"><h2>Program Kerja</h2><button class="btn btn-primary" onclick="openForm('program')">+ Tambah Program</button></div>
+        <div class="table-container" id="programTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
+      </div>
+    </div>
+
+    <!-- UMKM Page -->
+    <div id="page-umkm" class="page-section">
+      <div class="card">
+        <div class="card-header"><h2>Data UMKM</h2><button class="btn btn-primary" onclick="openForm('umkm')">+ Tambah UMKM</button></div>
+        <div class="table-container" id="umkmTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
+      </div>
+    </div>
+
+    <!-- Kas Page -->
+    <div id="page-kas" class="page-section">
+      <div class="stats-grid" id="kasSummary" style="margin-bottom:20px"></div>
+      <div class="card">
+        <div class="card-header"><h2>Transaksi Kas</h2><button class="btn btn-primary" onclick="openForm('kas')">+ Tambah Transaksi</button></div>
+        <div class="table-container" id="kasTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
+      </div>
+    </div>
+
+    <!-- Pengurus Page -->
+    <div id="page-pengurus" class="page-section">
+      <div class="card">
+        <div class="card-header"><h2>Struktur Pengurus</h2><button class="btn btn-primary" onclick="openForm('pengurus')">+ Tambah Pengurus</button></div>
+        <div class="table-container" id="pengurusTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
+      </div>
+    </div>
+
+    <!-- Pendaftar Page -->
+    <div id="page-pendaftar" class="page-section">
+      <div class="card">
+        <div class="card-header"><h2>Pendaftar Anggota</h2></div>
+        <div class="table-container" id="pendaftarTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Form -->
+  <div id="formModal" class="modal">
+    <div class="modal-content">
+      <h3 id="modalTitle">Form</h3>
+      <form id="dataForm" enctype="multipart/form-data">
+        <div id="formFields"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" onclick="closeForm()">Batal</button>
+          <button type="submit" class="btn btn-success">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirm Delete -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content" style="max-width:400px">
+      <h3>Konfirmasi Hapus</h3>
+      <p style="margin:15px 0">Apakah Anda yakin ingin menghapus data ini?</p>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeConfirm()">Batal</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Program kerja dan kalender kegiatan Karang Taruna Manunggal Bhakti">
+  <title>Program — Kar-Tar Manunggal Bhakti</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar-logo">
+        <img src="assets/logo.svg" alt="Logo Karang Taruna Manunggal Bhakti">
+        <span class="navbar-logo-text">Kar-Tar <span>Manunggal Bhakti</span></span>
+      </a>
+      <div class="navbar-links">
+        <a href="index.html">Beranda</a>
+        <a href="profil.html">Profil</a>
+        <a href="program.html" class="active">Program</a>
+        <a href="galeri.html">Galeri</a>
+        <a href="berita.html">Berita</a>
+        <a href="umkm.html">UMKM</a>
+        <a href="kas.html">Kas</a>
+        <a href="daftar.html">Daftar</a>
+        <a href="kontak.html">Kontak</a>
+      </div>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>Program Kerja</h1>
+    <p>Kegiatan rutin dan agenda mendatang Karang Taruna Manunggal Bhakti</p>
+    <div class="page-header-wave"></div>
+  </div>
+
+  <!-- PROGRAM KERJA -->
+  <section>
+    <div class="container">
+      <h2 class="section-title">Program Kerja Rutin</h2>
+      <p class="section-subtitle">Kegiatan yang kami selenggarakan secara periodik</p>
+
+      <div class="program-list grid-2" id="programRutinContainer">
+        <div class="loading" style="padding:40px;text-align:center"><div class="spinner"></div><p>Memuat program...</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KALENDER KEGIATAN -->
+  <section style="background: var(--color-white);">
+    <div class="container">
+      <h2 class="section-title">Kalender Kegiatan Mendatang</h2>
+      <p class="section-subtitle">Jadwal agenda yang akan datang — pantau terus update-nya</p>
+
+      <div class="kalender-list" id="programKalenderContainer">
+        <div class="loading" style="padding:40px;text-align:center"><div class="spinner"></div><p>Memuat kalender...</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <img src="assets/logo.svg" alt="Logo Karang Taruna Manunggal Bhakti">
+            <div class="footer-brand-text">
+              <h4>Karang Taruna Manunggal Bhakti</h4>
+              <p>Desa Dadaptulis Dalam</p>
+            </div>
+          </div>
+          <p>Wadah pemuda desa yang aktif bergerak di bidang sosial, olahraga, seni, dan pemberdayaan masyarakat.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Navigasi</h4>
+          <a href="index.html">Beranda</a>
+          <a href="profil.html">Profil</a>
+          <a href="program.html">Program Kerja</a>
+          <a href="galeri.html">Galeri</a>
+          <a href="berita.html">Berita</a>
+          <a href="umkm.html">UMKM</a>
+          <a href="kas.html">Transparansi Kas</a>
+          <a href="daftar.html">Pendaftaran</a>
+        </div>
+        <div class="footer-sosmed">
+          <h4>Ikuti Kami</h4>
+          <div class="social-icons">
+            <a href="#" title="WhatsApp" target="_blank">WA</a>
+            <a href="#" title="Instagram" target="_blank">IG</a>
+            <a href="#" title="Facebook" target="_blank">FB</a>
+            <a href="#" title="YouTube" target="_blank">YT</a>
+          </div>
+          <p style="margin-top: 16px; font-size: 0.82rem;">Kontak: 08xx-xxxx-xxxx<br>Dadaptulis Dalam</p>
+        </div>
+      </div>
+      <div class="footer-bottom">&copy; 2026 Karang Taruna Manunggal Bhakti — Desa Dadaptulis Dalam</div>
+    </div>
+  </footer>
+
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close">&times;</button>
+    <img id="lightbox-img" src="" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+  <script src="js/main.js"></script>
+</body>
+</html>

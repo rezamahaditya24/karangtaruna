@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="circle-clip">
+      <circle cx="100" cy="100" r="90"/>
+    </clipPath>
+  </defs>
+  <!-- Outer petals (yellow) -->
+  <g transform="translate(100,100)">
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9"/>
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9" transform="rotate(45)"/>
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9" transform="rotate(90)"/>
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9" transform="rotate(135)"/>
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9" transform="rotate(180)"/>
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9" transform="rotate(225)"/>
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9" transform="rotate(270)"/>
+    <path d="M0,-90 Q25,-70 20,-40 Q15,-10 0,0 Q-15,-10 -20,-40 Q-25,-70 0,-90Z" fill="#FFD700" opacity="0.9" transform="rotate(315)"/>
+  </g>
+  <!-- Red circle -->
+  <circle cx="100" cy="100" r="55" fill="#C8102E"/>
+  <!-- Inner white circle -->
+  <circle cx="100" cy="100" r="48" fill="#FFF" opacity="0.95"/>
+  <!-- Lotus petals -->
+  <g transform="translate(100,100)">
+    <path d="M0,-40 Q15,-30 10,-10 Q5,5 0,10 Q-5,5 -10,-10 Q-15,-30 0,-40Z" fill="#C8102E" opacity="0.85"/>
+    <path d="M0,-40 Q15,-30 10,-10 Q5,5 0,10 Q-5,5 -10,-10 Q-15,-30 0,-40Z" fill="#C8102E" opacity="0.85" transform="rotate(72)"/>
+    <path d="M0,-40 Q15,-30 10,-10 Q5,5 0,10 Q-5,5 -10,-10 Q-15,-30 0,-40Z" fill="#C8102E" opacity="0.85" transform="rotate(144)"/>
+    <path d="M0,-40 Q15,-30 10,-10 Q5,5 0,10 Q-5,5 -10,-10 Q-15,-30 0,-40Z" fill="#C8102E" opacity="0.85" transform="rotate(216)"/>
+    <path d="M0,-40 Q15,-30 10,-10 Q5,5 0,10 Q-5,5 -10,-10 Q-15,-30 0,-40Z" fill="#C8102E" opacity="0.85" transform="rotate(288)"/>
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="6" fill="#FFD700"/>
+  </g>
+  <!-- Outer border ring -->
+  <circle cx="100" cy="100" r="88" fill="none" stroke="#FFD700" stroke-width="2.5"/>
+  <circle cx="100" cy="100" r="60" fill="none" stroke="#C8102E" stroke-width="1.5"/>
+
+  <!-- Top ribbon -->
+  <rect x="15" y="10" width="170" height="16" rx="3" fill="#FFF" opacity="0.92"/>
+  <rect x="15" y="10" width="170" height="16" rx="3" fill="none" stroke="#C8102E" stroke-width="1"/>
+  <text x="100" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="10" fill="#C8102E" letter-spacing="1.5">MANUNGGAL BAKTI</text>
+
+  <!-- Bottom ribbon -->
+  <rect x="20" y="176" width="160" height="14" rx="3" fill="#FFF" opacity="0.92"/>
+  <rect x="20" y="176" width="160" height="14" rx="3" fill="none" stroke="#C8102E" stroke-width="1"/>
+  <text x="100" y="187" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="8" fill="#C8102E" letter-spacing="1">KARANG TARUNA</text>
+</svg>
