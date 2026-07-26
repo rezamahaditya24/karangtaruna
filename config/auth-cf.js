@@ -21,7 +21,7 @@ export async function verifyJWT(token, secret) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
   const valid = await crypto.subtle.verify('HMAC', key,
-    Uint8Array.from(atob(base64UrlDecode(parts[2])), c => c.charCodeAt(0)),
+    Uint8Array.from(base64UrlDecode(parts[2]), c => c.charCodeAt(0)),
     new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
   if (!valid) throw new Error('Invalid signature');
   return payload;
