@@ -18,17 +18,14 @@ try {
   app.use('/admin', express.static(path.join(__dirname, '..', '..', 'admin')));
   app.use(express.static(path.join(__dirname, '..', '..')));
 
-  const tryRoute = (path, filepath) => {
-    try { app.use(path, require(filepath)); } catch (e) { console.error(`${path} route:`, e.message); app.use(path, (req, res) => res.status(500).json({ error: `${path} unavailable: ${e.message}` })); }
-  };
-  tryRoute('/api/auth', '../../routes/auth');
-  tryRoute('/api/berita', '../../routes/berita');
-  tryRoute('/api/galeri', '../../routes/galeri');
-  tryRoute('/api/program', '../../routes/program');
-  tryRoute('/api/umkm', '../../routes/umkm');
-  tryRoute('/api/kas', '../../routes/kas');
-  tryRoute('/api/pengurus', '../../routes/pengurus');
-  tryRoute('/api/pendaftar', '../../routes/pendaftar');
+  try { app.use('/api/auth', require('../../routes/auth')); } catch (e) { app.use('/api/auth', (r, s) => s.status(500).json({ error: '/api/auth: ' + e.message })); }
+  try { app.use('/api/berita', require('../../routes/berita')); } catch (e) { app.use('/api/berita', (r, s) => s.status(500).json({ error: '/api/berita: ' + e.message })); }
+  try { app.use('/api/galeri', require('../../routes/galeri')); } catch (e) { app.use('/api/galeri', (r, s) => s.status(500).json({ error: '/api/galeri: ' + e.message })); }
+  try { app.use('/api/program', require('../../routes/program')); } catch (e) { app.use('/api/program', (r, s) => s.status(500).json({ error: '/api/program: ' + e.message })); }
+  try { app.use('/api/umkm', require('../../routes/umkm')); } catch (e) { app.use('/api/umkm', (r, s) => s.status(500).json({ error: '/api/umkm: ' + e.message })); }
+  try { app.use('/api/kas', require('../../routes/kas')); } catch (e) { app.use('/api/kas', (r, s) => s.status(500).json({ error: '/api/kas: ' + e.message })); }
+  try { app.use('/api/pengurus', require('../../routes/pengurus')); } catch (e) { app.use('/api/pengurus', (r, s) => s.status(500).json({ error: '/api/pengurus: ' + e.message })); }
+  try { app.use('/api/pendaftar', require('../../routes/pendaftar')); } catch (e) { app.use('/api/pendaftar', (r, s) => s.status(500).json({ error: '/api/pendaftar: ' + e.message })); }
 
   app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
     res.sendFile(path.join(__dirname, '..', '..', 'admin', 'index.html'), (err) => {
