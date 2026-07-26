@@ -318,10 +318,22 @@ export async function handleAPI(request, env) {
     if (s[0] === 'anggaran') {
       const aid = s[1];
       if (!aid && method === 'GET') {
-        const rows = await supabase.query('anggaran', { order: 'created_at.desc' });
-        const enriched = await Promise.all(rows.map(async a => ({ ...a, kegiatan_nama: a.kegiatan_id ? (await supabase.get('program', { id: `eq.${a.kegiatan_id}` }))?.judul || null })));
-        const txAll = await supabase.query('transaksi');
-        return json(enriched.map(a => ({ ...a, realisasi: parseFloat(txAll.filter(t => (t.kegiatan === a.kegiatan || t.kegiatan_id === a.kegiatan_id) && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0) || 0) })));
+        const [rows, txAll] = await Promise.all([
+          supabase.query('anggaran', { order: 'created_at.desc' }),
+          supabase.query('transaksi')
+        ]);
+        const enriched = await Promise.all(rows.map(async a => {
+          const nm = a.kegiatan_id
+            ? (await supabase.get('program', { id: `eq.${a.kegiatan_id}` }))?.judul || null
+            : null;
+          return { ...a, kegiatan_nama: nm };
+        }));
+        return json(enriched.map(a => {
+          const real = txAll
+            .filter(t => (t.kegiatan === a.kegiatan || t.kegiatan_id === a.kegiatan_id) && t.status === 'terkunci')
+            .reduce((s, t) => s + parseFloat(t.jumlah), 0);
+          return { ...a, realisasi: parseFloat(real) || 0 };
+        }));
       }
       if (!aid && method === 'POST') {
         authorize(['bendahara', 'super_admin'], user);
