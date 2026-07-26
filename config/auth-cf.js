@@ -57,7 +57,7 @@ export async function verifyPassword(password, stored) {
   if (!stored) return false;
   if (stored.startsWith('pbkdf2_10000_')) {
     try {
-      const raw = stored.slice(12).trim();
+      const raw = stored.slice(13);
       const combined = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
       if (combined.length < 17) return false;
       const salt = combined.slice(0, 16);
