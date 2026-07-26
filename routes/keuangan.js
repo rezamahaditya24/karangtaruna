@@ -51,15 +51,15 @@ router.get('/transaksi', auth, async (req, res) => {
 
 router.post('/transaksi', auth, upload.single('bukti'), async (req, res) => {
   try {
-    const { tipe, kategori, jumlah, deskripsi, kegiatan_id } = req.body;
+    const { tipe, kategori, jumlah, deskripsi, kegiatan_id, kegiatan } = req.body;
     if (!tipe || !kategori || !jumlah || !deskripsi) return res.status(400).json({ error: 'Lengkapi semua field wajib.' });
     const nominal = parseFloat(jumlah);
     if (isNaN(nominal) || nominal <= 0) return res.status(400).json({ error: 'Jumlah harus angka positif.' });
     let buktiUrl = null;
     if (req.file) buktiUrl = await uploadFile(req.file, 'bukti');
     const result = await db.run(
-      'INSERT INTO transaksi (tipe, kategori, jumlah, deskripsi, kegiatan_id, bukti_url, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [tipe, kategori, nominal, deskripsi, kegiatan_id || null, buktiUrl, 'draft', req.user.id]
+      'INSERT INTO transaksi (tipe, kategori, jumlah, deskripsi, kegiatan_id, kegiatan, bukti_url, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [tipe, kategori, nominal, deskripsi, kegiatan_id || null, kegiatan || null, buktiUrl, 'draft', req.user.id]
     );
     await logActivity(req.user.id, 'tambah_transaksi', `Transaksi ${tipe} Rp${nominal} - ${deskripsi.substring(0, 50)}`);
     res.json({ id: result.lastInsertRowid, message: 'Transaksi berhasil ditambahkan (status: draft).' });
@@ -132,7 +132,7 @@ router.post('/transaksi/:id/koreksi', auth, upload.single('bukti'), authorize('b
   try {
     const tx = await db.get('SELECT * FROM transaksi WHERE id = ?', [req.params.id]);
     if (!tx) return res.status(404).json({ error: 'Transaksi tidak ditemukan.' });
-    const { tipe, kategori, jumlah, deskripsi, kegiatan_id } = req.body;
+    const { tipe, kategori, jumlah, deskripsi, kegiatan_id, kegiatan } = req.body;
     if (!tipe || !kategori || !jumlah || !deskripsi) return res.status(400).json({ error: 'Lengkapi semua field wajib.' });
     const nominal = parseFloat(jumlah);
     if (isNaN(nominal) || nominal <= 0) return res.status(400).json({ error: 'Jumlah harus angka positif.' });
@@ -143,8 +143,8 @@ router.post('/transaksi/:id/koreksi', auth, upload.single('bukti'), authorize('b
       buktiUrl = tx.bukti_url;
     }
     const result = await db.run(
-      'INSERT INTO transaksi (tipe, kategori, jumlah, deskripsi, kegiatan_id, bukti_url, status, created_by, koreksi_dari_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [tipe || tx.tipe, kategori || tx.kategori, nominal || tx.jumlah, deskripsi || tx.deskripsi, kegiatan_id || tx.kegiatan_id, buktiUrl, 'draft', req.user.id, tx.id]
+      'INSERT INTO transaksi (tipe, kategori, jumlah, deskripsi, kegiatan_id, kegiatan, bukti_url, status, created_by, koreksi_dari_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [tipe || tx.tipe, kategori || tx.kategori, nominal || tx.jumlah, deskripsi || tx.deskripsi, kegiatan_id || tx.kegiatan_id, kegiatan || tx.kegiatan, buktiUrl, 'draft', req.user.id, tx.id]
     );
     await logActivity(req.user.id, 'koreksi_transaksi', `Koreksi transaksi #${req.params.id} -> #${result.lastInsertRowid}`);
     res.json({ id: result.lastInsertRowid, message: 'Koreksi berhasil dibuat sebagai transaksi baru. Menunggu verifikasi.' });
@@ -165,9 +165,9 @@ router.get('/anggaran', auth, async (req, res) => {
 
 router.post('/anggaran', auth, authorize('bendahara', 'super_admin'), async (req, res) => {
   try {
-    const { kegiatan_id, judul, rencana, periode_bulan, periode_tahun } = req.body;
-    if (!kegiatan_id || !judul || !rencana) return res.status(400).json({ error: 'Lengkapi field wajib.' });
-    const result = await db.run('INSERT INTO anggaran (kegiatan_id, judul, rencana, periode_bulan, periode_tahun) VALUES (?, ?, ?, ?, ?)', [kegiatan_id, judul, parseFloat(rencana), periode_bulan || null, periode_tahun || null]);
+    const { kegiatan_id, kegiatan, judul, rencana, periode_bulan, periode_tahun } = req.body;
+    if (!judul || !rencana) return res.status(400).json({ error: 'Lengkapi field wajib.' });
+    const result = await db.run('INSERT INTO anggaran (kegiatan_id, kegiatan, judul, rencana, periode_bulan, periode_tahun) VALUES (?, ?, ?, ?, ?, ?)', [kegiatan_id || null, kegiatan || null, judul, parseFloat(rencana), periode_bulan || null, periode_tahun || null]);
     await logActivity(req.user.id, 'tambah_anggaran', `Anggaran ${judul} Rp${rencana}`);
     res.json({ id: result.lastInsertRowid, message: 'Anggaran berhasil dibuat.' });
   } catch (err) {

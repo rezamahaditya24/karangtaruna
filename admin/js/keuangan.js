@@ -91,10 +91,9 @@ function openKeuanganForm() {
     </div>
     <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" min="1" required></div>
     <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required placeholder="Untuk apa transaksi ini? Terkait kegiatan apa?"></textarea></div>
-    <div class="form-group"><label>Kegiatan (opsional)</label><select name="kegiatan_id"><option value="">Tidak terkait kegiatan</option></select></div>
+    <div class="form-group"><label>Kegiatan (opsional, ketik manual)</label><input type="text" name="kegiatan" placeholder="Misal: Dana Lomba 17 Agustus, Pentas Seni, dll"></div>
     <div class="form-group"><label>Upload Bukti (foto struk/nota)</label><input type="file" name="bukti" accept="image/*"></div>
   `;
-  loadKegiatanOptions('keuanganFormFields');
   document.getElementById('keuanganModal').classList.add('show');
   document.getElementById('keuanganForm').onsubmit = async (e) => {
     e.preventDefault();
@@ -124,6 +123,7 @@ async function detailKeuanganTransaksi(id) {
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Kategori</td><td>${escapeHtml(t.kategori)}</td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Jumlah</td><td style="font-size:18px;font-weight:bold;color:${t.tipe === 'pemasukan' ? '#28a745' : '#dc3545'}">Rp ${formatNumber(t.jumlah)}</td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Deskripsi</td><td>${escapeHtml(t.deskripsi)}</td></tr>
+          ${t.kegiatan ? `<tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Kegiatan</td><td>${escapeHtml(t.kegiatan)}</td></tr>` : ''}
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Status</td><td><span class="badge ${t.status === 'terkunci' ? 'badge-success' : t.status === 'diverifikasi' ? 'badge-primary' : t.status === 'ditolak' ? 'badge-danger' : 'badge-warning'}">${t.status}</span></td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Dibuat Oleh</td><td>${escapeHtml(t.created_by_name || '-')}</td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Diverifikasi Oleh</td><td>${escapeHtml(t.diverifikasi_oleh_name || '-')}</td></tr>
@@ -182,10 +182,9 @@ async function koreksiKeuanganTransaksi(id) {
       </div>
       <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" value="${t.jumlah}" min="1" required></div>
       <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required>${escapeHtml(t.deskripsi)}</textarea></div>
-      <div class="form-group"><label>Kegiatan (opsional)</label><select name="kegiatan_id"><option value="">Tidak terkait kegiatan</option></select></div>
+      <div class="form-group"><label>Kegiatan (opsional)</label><input type="text" name="kegiatan" value="${escapeHtml(t.kegiatan || '')}" placeholder="Misal: Dana Lomba 17 Agustus"></div>
       <div class="form-group"><label>Upload Bukti Baru (opsional)</label><input type="file" name="bukti" accept="image/*"></div>
     `;
-    loadKegiatanOptions('keuanganFormFields', t.kegiatan_id);
     document.getElementById('keuanganModal').classList.add('show');
     document.getElementById('keuanganForm').onsubmit = async (e) => {
       e.preventDefault();
@@ -212,8 +211,9 @@ async function loadKeuanganAnggaran() {
       const sisa = a.rencana - a.realisasi;
       const pct = a.rencana > 0 ? Math.min(100, Math.round(a.realisasi / a.rencana * 100)) : 0;
       const warning = pct >= 90 ? 'color:#dc3545' : pct >= 75 ? 'color:#ffc107' : 'color:#28a745';
+      const kegiatanNama = a.kegiatan_nama || a.kegiatan || '-';
       return `<tr>
-        <td>${escapeHtml(a.kegiatan_nama || '-')}</td>
+        <td>${escapeHtml(kegiatanNama)}</td>
         <td>${escapeHtml(a.judul)}</td>
         <td>Rp ${formatNumber(a.rencana)}</td>
         <td>Rp ${formatNumber(a.realisasi)}</td>
@@ -230,7 +230,7 @@ async function loadKeuanganAnggaran() {
 function openKeuanganAnggaranForm() {
   document.getElementById('keuanganAnggaranModalTitle').textContent = 'Tambah Anggaran';
   document.getElementById('keuanganAnggaranFormFields').innerHTML = `
-    <div class="form-group"><label>Kegiatan</label><select name="kegiatan_id" id="anggaranKegiatanSelect" required></select></div>
+    <div class="form-group"><label>Kegiatan (ketik manual)</label><input type="text" name="kegiatan" placeholder="Misal: Konsumsi Acara, Dekorasi Panggung, dll"></div>
     <div class="form-group"><label>Judul Anggaran</label><input type="text" name="judul" required placeholder="Misal: Konsumsi, Dekorasi, dll"></div>
     <div class="form-row">
       <div class="form-group"><label>Rencana Anggaran (Rp)</label><input type="number" name="rencana" min="1" required></div>
@@ -240,7 +240,6 @@ function openKeuanganAnggaranForm() {
       <div class="form-group"><label>Periode Tahun</label><select name="periode_tahun">${[2024,2025,2026,2027,2028].map(y => `<option value="${y}" ${y === new Date().getFullYear() ? 'selected' : ''}>${y}</option>`).join('')}</select></div>
     </div>
   `;
-  loadKegiatanOptions('keuanganAnggaranFormFields');
   document.getElementById('keuanganAnggaranModal').classList.add('show');
   document.getElementById('keuanganAnggaranForm').onsubmit = async (e) => {
     e.preventDefault();

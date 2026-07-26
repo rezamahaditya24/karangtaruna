@@ -69,6 +69,12 @@ try {
       } catch (_) { /* column may already exist */ }
 
       try {
+        await db.run(`ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS kegiatan TEXT`);
+        await db.run(`ALTER TABLE anggaran ADD COLUMN IF NOT EXISTS kegiatan TEXT`);
+        await db.run(`ALTER TABLE anggaran ALTER COLUMN kegiatan_id DROP NOT NULL`);
+      } catch (_) { /* column may already exist or PG-specific */ }
+
+      try {
         await db.exec(`
           CREATE TABLE IF NOT EXISTS transaksi (
             id SERIAL PRIMARY KEY,
@@ -77,6 +83,7 @@ try {
             jumlah DECIMAL(15,2) NOT NULL,
             deskripsi TEXT NOT NULL,
             kegiatan_id INTEGER REFERENCES program(id),
+            kegiatan TEXT,
             bukti_url TEXT,
             status VARCHAR(20) DEFAULT 'draft',
             created_by INTEGER NOT NULL REFERENCES users(id),
@@ -89,7 +96,8 @@ try {
           );
           CREATE TABLE IF NOT EXISTS anggaran (
             id SERIAL PRIMARY KEY,
-            kegiatan_id INTEGER NOT NULL REFERENCES program(id),
+            kegiatan_id INTEGER REFERENCES program(id),
+            kegiatan TEXT,
             judul VARCHAR(255) NOT NULL,
             rencana DECIMAL(15,2) DEFAULT 0,
             realisasi DECIMAL(15,2) DEFAULT 0,
@@ -254,6 +262,7 @@ try {
         jumlah REAL NOT NULL,
         deskripsi TEXT NOT NULL,
         kegiatan_id INTEGER REFERENCES program(id),
+        kegiatan TEXT,
         bukti_url TEXT,
         status TEXT NOT NULL DEFAULT 'draft',
         created_by INTEGER NOT NULL REFERENCES users(id),
@@ -266,7 +275,8 @@ try {
       );
       CREATE TABLE IF NOT EXISTS anggaran (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        kegiatan_id INTEGER NOT NULL REFERENCES program(id),
+        kegiatan_id INTEGER REFERENCES program(id),
+        kegiatan TEXT,
         judul TEXT NOT NULL,
         rencana REAL DEFAULT 0,
         realisasi REAL DEFAULT 0,
@@ -304,6 +314,8 @@ try {
 
     try { sqlite.prepare("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'anggota'").run(); } catch (_) {}
     try { sqlite.prepare("ALTER TABLE users ADD COLUMN display_name TEXT").run(); } catch (_) {}
+    try { sqlite.prepare("ALTER TABLE transaksi ADD COLUMN kegiatan TEXT").run(); } catch (_) {}
+    try { sqlite.prepare("ALTER TABLE anggaran ADD COLUMN kegiatan TEXT").run(); } catch (_) {}
     try { sqlite.prepare("UPDATE users SET role = 'super_admin' WHERE username = 'Admin' AND (role IS NULL OR role = 'anggota')").run(); } catch (_) {}
 
     const existing = sqlite.prepare('SELECT id, username FROM users WHERE LOWER(username) = ?').get('admin');
