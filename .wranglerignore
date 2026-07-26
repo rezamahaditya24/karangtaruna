@@ -1,0 +1,17 @@
+node_modules/
+.git/
+.gitignore
+.env
+.env.example
+config/
+functions/
+_redirects
+*.sql
+Dockerfile
+railway.json
+server.js
+setup-*.js
+migrate-password.js
+data.db
+data.db-journal
+package-lock.json
