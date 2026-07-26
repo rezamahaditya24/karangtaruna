@@ -22,8 +22,13 @@ try {
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 10000
+      max: 1,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 60000,
+      allowExitOnIdle: true
     });
+
+    pool.on('error', (err) => console.error('PostgreSQL pool error:', err.message));
 
     function convert(sql, params) {
       let i = 0;
