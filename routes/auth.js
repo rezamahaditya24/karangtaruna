@@ -7,7 +7,7 @@ require('dotenv').config();
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
     if (!user) {
       return res.status(400).json({ error: 'Username atau password salah.' });
     }

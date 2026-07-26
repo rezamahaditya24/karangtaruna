@@ -78,10 +78,13 @@ CREATE TABLE IF NOT EXISTS pendaftar (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create default admin user (password: admin123)
-INSERT INTO users (username, password) 
-VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy')
-ON CONFLICT (username) DO NOTHING;
+-- Default admin user will be auto-created on app startup with:
+--   Username: Admin
+--   Password: Admin123
+-- This is handled in config/db.js for both SQLite and PostgreSQL.
+-- You can run the query below to create it manually if needed:
+-- INSERT INTO users (username, password) VALUES ('Admin', '$2b$10$...bcrypt_hash_for_Admin123...')
+-- ON CONFLICT (username) DO NOTHING;
 
 -- Enable Row Level Security (optional for now)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

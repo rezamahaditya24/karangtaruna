@@ -50,6 +50,25 @@ if (process.env.DATABASE_URL) {
     exec: async (sql) => { await pool.query(sql); }
   };
 
+  (async () => {
+    try {
+      const existing = await db.get('SELECT id, username FROM users WHERE LOWER(username) = LOWER(?)', ['admin']);
+      if (!existing) {
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync('Admin123', salt);
+        await db.run('INSERT INTO users (username, password) VALUES (?, ?)', ['Admin', hash]);
+        console.log('Default admin user created: Admin / Admin123');
+      } else if (existing.username !== 'Admin') {
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync('Admin123', salt);
+        await db.run('UPDATE users SET username = ?, password = ? WHERE id = ?', ['Admin', hash, existing.id]);
+        console.log('Default admin user updated: Admin / Admin123');
+      }
+    } catch (err) {
+      console.error('Error seeding admin user:', err.message);
+    }
+  })();
+
 } else if (process.env.MYSQL_URL) {
   // ========== MySQL for Railway ==========
   const mysql = require('mysql2/promise');
@@ -153,12 +172,17 @@ if (process.env.DATABASE_URL) {
     );
   `);
 
-  const existing = sqlite.prepare('SELECT id FROM users WHERE username = ?').get('admin');
+  const existing = sqlite.prepare('SELECT id, username FROM users WHERE LOWER(username) = ?').get('admin');
   if (!existing) {
     const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync('admin123', salt);
-    sqlite.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('admin', hash);
-    console.log('Default admin user created: admin / admin123');
+    const hash = bcrypt.hashSync('Admin123', salt);
+    sqlite.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('Admin', hash);
+    console.log('Default admin user created: Admin / Admin123');
+  } else if (existing.username !== 'Admin') {
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync('Admin123', salt);
+    sqlite.prepare('UPDATE users SET username = ?, password = ? WHERE id = ?').run('Admin', hash, existing.id);
+    console.log('Default admin user updated: Admin / Admin123');
   }
 
   db = {
