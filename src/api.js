@@ -1,5 +1,5 @@
 import { createClient } from '../config/supabase-rest.js';
-import { authenticate, signJWT, verifyPassword, authorize, migratePassword } from '../config/auth-cf.js';
+import { authenticate, signJWT, verifyPassword, authorize, migratePassword, hashPassword } from '../config/auth-cf.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -59,6 +59,16 @@ export async function handleAPI(request, env) {
     const parsed = await parseBody(request);
     body = parsed.body;
     file = parsed.file;
+  }
+
+  // ===================== SETUP =====================
+  if (segments[0] === 'setup' && method === 'POST') {
+    const existing = await supabase.get('users', { limit: '1' });
+    if (existing) return json({ message: 'Sudah ada user. Tidak perlu setup ulang.' });
+    const pw = body.password || 'Admin123';
+    const hashed = await hashPassword(pw);
+    const row = await supabase.insert('users', { username: 'admin', password: hashed, role: 'super_admin', display_name: 'Admin' });
+    return json({ message: 'Admin berhasil dibuat.', username: 'admin' });
   }
 
   // ===================== AUTH =====================
