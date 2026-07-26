@@ -1,0 +1,9 @@
+# Cloudflare Pages configuration
+# This file is for reference. Set these values in the Cloudflare Pages dashboard.
+# Dashboard: Cloudflare Pages > Your project > Settings > Functions > Compatibility flags
+# Add: nodejs_compat
+
+# Build configuration (set in dashboard):
+#   Build command: (none - no build step needed)
+#   Build output directory: .
+#   Root directory: /
