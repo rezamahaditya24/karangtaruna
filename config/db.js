@@ -19,11 +19,15 @@ try {
   if (process.env.DATABASE_URL) {
     const { Pool } = require('pg');
 
+    const dbUrl = new URL(process.env.DATABASE_URL);
+    dbUrl.searchParams.delete('sslmode');
+    dbUrl.searchParams.delete('ssl');
+
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: dbUrl.toString(),
       ssl: { rejectUnauthorized: false },
       max: 1,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 15000,
       idleTimeoutMillis: 60000,
       allowExitOnIdle: true
     });
