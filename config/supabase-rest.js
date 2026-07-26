@@ -4,7 +4,7 @@ export function createClient(env) {
   if (!url || !key) throw new Error('SUPABASE_URL or SUPABASE_SERVICE_KEY not set');
 
   const restUrl = `${url}/rest/v1`;
-  const authHeaders = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
+  const authHeaders = { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
 
   async function request(method, path, opts = {}) {
     const res = await fetch(`${restUrl}${path}`, {

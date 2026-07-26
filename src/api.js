@@ -36,7 +36,7 @@ async function uploadToSupabase(file, folder, env) {
   const filename = `${folder}/${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
   const res = await fetch(`${env.SUPABASE_URL}/storage/v1/object/karangtaruna/${filename}`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': file.file.type || 'application/octet-stream' },
+    headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': file.file.type || 'application/octet-stream' },
     body: buf
   });
   if (!res.ok) throw new Error(`Gagal upload: ${res.status} ${await res.text()}`);
