@@ -83,13 +83,16 @@ export async function handleAPI(request, env) {
     return json({ token, username: user.username });
   }
 
-  const protectedTables = ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus', 'pendaftar'];
-  const isProtected = protectedTables.includes(segments[0]);
-  const isKeuangan = ['keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'].includes(segments[0]);
+  const publicTables = ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus'];
+  const adminTables = ['pendaftar', 'keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'];
   let user = null;
-  if (isProtected || isKeuangan) {
-    try { user = await authenticate(request, env); }
-    catch (e) { return error(e.message, 401); }
+  if (publicTables.includes(segments[0]) || adminTables.includes(segments[0])) {
+    const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
+    const isPublicRegister = segments[0] === 'pendaftar' && method === 'POST';
+    if (!isPublicGet && !isPublicRegister) {
+      try { user = await authenticate(request, env); }
+      catch (e) { return error(e.message, 401); }
+    }
   }
 
   const id = segments.length > 1 ? segments[1] : null;
@@ -192,6 +195,11 @@ export async function handleAPI(request, env) {
   // ===================== PENDAFTAR =====================
   if (segments[0] === 'pendaftar') {
     if (method === 'GET') return json(await supabase.query('pendaftar', { order: 'created_at.desc' }));
+    if (method === 'POST') {
+      if (!body.nama_lengkap) return error('Nama lengkap wajib diisi.');
+      await supabase.insert('pendaftar', { nama_lengkap: body.nama_lengkap, usia: parseInt(body.usia) || null, no_hp: body.no_hp, alamat: body.alamat, pekerjaan: body.pekerjaan || '', alasan_bergabung: body.alasan_bergabung || '' });
+      return json({ message: 'Pendaftaran berhasil.' });
+    }
     if (id && method === 'DELETE') { await supabase.remove('pendaftar', { id: `eq.${id}` }); return json({ message: 'Pendaftar berhasil dihapus.' }); }
   }
 
