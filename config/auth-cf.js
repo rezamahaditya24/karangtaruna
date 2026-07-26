@@ -1,12 +1,16 @@
 export function base64UrlDecode(s) {
-  s = s.replace(/-/g, '+').replace(/_/g, '/');
-  while (s.length % 4) s += '=';
-  return atob(s);
+  try {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    return atob(s);
+  } catch { return ''; }
 }
 
 export function base64UrlEncode(buf) {
-  const s = btoa(String.fromCharCode(...new Uint8Array(buf)));
-  return s.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  try {
+    const s = btoa(String.fromCharCode(...new Uint8Array(buf)));
+    return s.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  } catch { return ''; }
 }
 
 export async function verifyJWT(token, secret) {
@@ -46,22 +50,26 @@ export async function hashPassword(password) {
   const combined = new Uint8Array(salt.length + hash.byteLength);
   combined.set(salt);
   combined.set(new Uint8Array(hash), salt.length);
-  return 'pbkdf2_10000_' + btoa(String.fromCharCode(...combined));
+  return 'pbkdf2_10000_' + btoa(String.fromCharCode(...new Uint8Array(combined)));
 }
 
 export async function verifyPassword(password, stored) {
   if (!stored) return false;
   if (stored.startsWith('pbkdf2_10000_')) {
-    const combined = Uint8Array.from(atob(stored.slice(12)), c => c.charCodeAt(0));
-    const salt = combined.slice(0, 16);
-    const oldHash = combined.slice(16);
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password),
-      { name: 'PBKDF2' }, false, ['deriveBits']);
-    const newHash = await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', salt, iterations: 10000, hash: 'SHA-256' }, key, 256);
-    if (oldHash.byteLength !== newHash.byteLength) return false;
-    const a = new Uint8Array(oldHash), b = new Uint8Array(newHash);
-    return a.every((v, i) => v === b[i]);
+    try {
+      const raw = stored.slice(12).trim();
+      const combined = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      if (combined.length < 17) return false;
+      const salt = combined.slice(0, 16);
+      const oldHash = combined.slice(16);
+      const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password),
+        { name: 'PBKDF2' }, false, ['deriveBits']);
+      const newHash = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt, iterations: 10000, hash: 'SHA-256' }, key, 256);
+      if (oldHash.byteLength !== newHash.byteLength) return false;
+      const a = new Uint8Array(oldHash), b = new Uint8Array(newHash);
+      return a.every((v, i) => v === b[i]);
+    } catch { return false; }
   }
   if (stored.startsWith('$2')) {
     try {
