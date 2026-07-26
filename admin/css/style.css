@@ -333,6 +333,15 @@ table tr:hover {
   background: #e0a800;
 }
 
+.btn-info {
+  background: #17a2b8;
+  color: #fff;
+}
+
+.btn-info:hover {
+  background: #138496;
+}
+
 .btn-sm {
   padding: 5px 10px;
   font-size: 12px;
@@ -433,6 +442,16 @@ table tr:hover {
 .badge-danger {
   background: #f8d7da;
   color: #721c24;
+}
+
+.badge-primary {
+  background: #007bff;
+  color: #fff;
+}
+
+.badge-secondary {
+  background: #6c757d;
+  color: #fff;
 }
 
 .badge-warning {

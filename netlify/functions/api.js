@@ -26,6 +26,7 @@ try {
   try { app.use('/api/kas', require('../../routes/kas')); } catch (e) { app.use('/api/kas', (r, s) => s.status(500).json({ error: '/api/kas: ' + e.message })); }
   try { app.use('/api/pengurus', require('../../routes/pengurus')); } catch (e) { app.use('/api/pengurus', (r, s) => s.status(500).json({ error: '/api/pengurus: ' + e.message })); }
   try { app.use('/api/pendaftar', require('../../routes/pendaftar')); } catch (e) { app.use('/api/pendaftar', (r, s) => s.status(500).json({ error: '/api/pendaftar: ' + e.message })); }
+  try { app.use('/api/keuangan', require('../../routes/keuangan')); } catch (e) { app.use('/api/keuangan', (r, s) => s.status(500).json({ error: '/api/keuangan: ' + e.message })); }
 
   app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
     res.sendFile(path.join(__dirname, '..', '..', 'admin', 'index.html'), (err) => {

@@ -98,7 +98,13 @@ function navigateTo(page) {
     umkm: 'Kelola UMKM',
     kas: 'Kelola Kas',
     pengurus: 'Kelola Pengurus',
-    pendaftar: 'Data Pendaftar'
+    pendaftar: 'Data Pendaftar',
+    keuangan: 'Dashboard Keuangan',
+    'keuangan-transaksi': 'Transaksi Keuangan',
+    'keuangan-anggaran': 'Anggaran Kegiatan',
+    'keuangan-iuran': 'Iuran Anggota',
+    'keuangan-log': 'Log Aktivitas',
+    'keuangan-users': 'Manajemen User'
   };
   document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
   document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
@@ -116,6 +122,12 @@ function navigateTo(page) {
     case 'kas': loadKas(); break;
     case 'pengurus': loadPengurus(); break;
     case 'pendaftar': loadPendaftar(); break;
+    case 'keuangan': loadKeuanganDashboard(); break;
+    case 'keuangan-transaksi': loadKeuanganTransaksi(); break;
+    case 'keuangan-anggaran': loadKeuanganAnggaran(); break;
+    case 'keuangan-iuran': loadKeuanganIuran(); break;
+    case 'keuangan-log': loadKeuanganLog(); break;
+    case 'keuangan-users': loadKeuanganUsers(); break;
   }
 }
 

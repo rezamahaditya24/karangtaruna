@@ -64,6 +64,75 @@ try {
 
     (async () => {
       try {
+        await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'anggota'`);
+        await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(100)`);
+      } catch (_) { /* column may already exist */ }
+
+      try {
+        await db.exec(`
+          CREATE TABLE IF NOT EXISTS transaksi (
+            id SERIAL PRIMARY KEY,
+            tipe VARCHAR(20) NOT NULL,
+            kategori VARCHAR(100) NOT NULL,
+            jumlah DECIMAL(15,2) NOT NULL,
+            deskripsi TEXT NOT NULL,
+            kegiatan_id INTEGER REFERENCES program(id),
+            bukti_url TEXT,
+            status VARCHAR(20) DEFAULT 'draft',
+            created_by INTEGER NOT NULL REFERENCES users(id),
+            diverifikasi_oleh INTEGER REFERENCES users(id),
+            diverifikasi_at TIMESTAMPTZ,
+            dikunci_oleh INTEGER REFERENCES users(id),
+            dikunci_at TIMESTAMPTZ,
+            koreksi_dari_id INTEGER REFERENCES transaksi(id),
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+          CREATE TABLE IF NOT EXISTS anggaran (
+            id SERIAL PRIMARY KEY,
+            kegiatan_id INTEGER NOT NULL REFERENCES program(id),
+            judul VARCHAR(255) NOT NULL,
+            rencana DECIMAL(15,2) DEFAULT 0,
+            realisasi DECIMAL(15,2) DEFAULT 0,
+            periode_bulan INTEGER,
+            periode_tahun INTEGER,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+          CREATE TABLE IF NOT EXISTS aktivitas_log (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            aksi VARCHAR(100) NOT NULL,
+            detail TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+          CREATE TABLE IF NOT EXISTS iuran (
+            id SERIAL PRIMARY KEY,
+            anggota_id INTEGER NOT NULL REFERENCES pendaftar(id),
+            periode_bulan INTEGER NOT NULL,
+            periode_tahun INTEGER NOT NULL,
+            jumlah DECIMAL(15,2) DEFAULT 0,
+            status VARCHAR(10) DEFAULT 'belum',
+            transaksi_id INTEGER REFERENCES transaksi(id),
+            lunas_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(anggota_id, periode_bulan, periode_tahun)
+          );
+          CREATE TABLE IF NOT EXISTS komentar_transaksi (
+            id SERIAL PRIMARY KEY,
+            transaksi_id INTEGER NOT NULL REFERENCES transaksi(id),
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            pesan TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+        `);
+      } catch (err) {
+        console.error('Error creating keuangan tables:', err.message);
+      }
+
+      try {
+        await db.run(`UPDATE users SET role = 'super_admin' WHERE LOWER(username) = 'admin' AND (role IS NULL OR role = 'anggota')`);
+      } catch (_) {}
+
+      try {
         const existing = await db.get('SELECT id, username FROM users WHERE LOWER(username) = LOWER(?)', ['admin']);
         if (!existing) {
           const hash = await bcrypt.hash('Admin123', 10);
@@ -178,18 +247,75 @@ try {
         alasan_bergabung TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS transaksi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tipe TEXT NOT NULL DEFAULT 'pemasukan',
+        kategori TEXT NOT NULL,
+        jumlah REAL NOT NULL,
+        deskripsi TEXT NOT NULL,
+        kegiatan_id INTEGER REFERENCES program(id),
+        bukti_url TEXT,
+        status TEXT NOT NULL DEFAULT 'draft',
+        created_by INTEGER NOT NULL REFERENCES users(id),
+        diverifikasi_oleh INTEGER REFERENCES users(id),
+        diverifikasi_at DATETIME,
+        dikunci_oleh INTEGER REFERENCES users(id),
+        dikunci_at DATETIME,
+        koreksi_dari_id INTEGER REFERENCES transaksi(id),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS anggaran (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        kegiatan_id INTEGER NOT NULL REFERENCES program(id),
+        judul TEXT NOT NULL,
+        rencana REAL DEFAULT 0,
+        realisasi REAL DEFAULT 0,
+        periode_bulan INTEGER,
+        periode_tahun INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS aktivitas_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        aksi TEXT NOT NULL,
+        detail TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS iuran (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        anggota_id INTEGER NOT NULL REFERENCES pendaftar(id),
+        periode_bulan INTEGER NOT NULL,
+        periode_tahun INTEGER NOT NULL,
+        jumlah REAL DEFAULT 0,
+        status TEXT DEFAULT 'belum',
+        transaksi_id INTEGER REFERENCES transaksi(id),
+        lunas_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(anggota_id, periode_bulan, periode_tahun)
+      );
+      CREATE TABLE IF NOT EXISTS komentar_transaksi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaksi_id INTEGER NOT NULL REFERENCES transaksi(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        pesan TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `);
+
+    try { sqlite.prepare("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'anggota'").run(); } catch (_) {}
+    try { sqlite.prepare("ALTER TABLE users ADD COLUMN display_name TEXT").run(); } catch (_) {}
+    try { sqlite.prepare("UPDATE users SET role = 'super_admin' WHERE username = 'Admin' AND (role IS NULL OR role = 'anggota')").run(); } catch (_) {}
 
     const existing = sqlite.prepare('SELECT id, username FROM users WHERE LOWER(username) = ?').get('admin');
     if (!existing) {
       const salt = bcrypt.genSaltSync(10);
       const hash = bcrypt.hashSync('Admin123', salt);
-      sqlite.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('Admin', hash);
+      sqlite.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run('Admin', hash, 'super_admin');
       console.log('Default admin user created: Admin / Admin123');
     } else if (existing.username !== 'Admin') {
       const salt = bcrypt.genSaltSync(10);
       const hash = bcrypt.hashSync('Admin123', salt);
-      sqlite.prepare('UPDATE users SET username = ?, password = ? WHERE id = ?').run('Admin', hash, existing.id);
+      sqlite.prepare('UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?').run('Admin', hash, 'super_admin', existing.id);
       console.log('Default admin user updated: Admin / Admin123');
     }
 
