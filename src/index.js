@@ -27,14 +27,6 @@ export default {
       }
     }
 
-    if (path.startsWith('/admin')) {
-      const last = path.split('/').filter(Boolean).pop() || '';
-      if (last.includes('.')) {
-        return env.ASSETS.fetch(request);
-      }
-      return env.ASSETS.fetch(new Request(`${url.origin}/admin/index.html`, request));
-    }
-
     return env.ASSETS.fetch(request);
   }
 }
