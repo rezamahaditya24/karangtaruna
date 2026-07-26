@@ -18,14 +18,17 @@ try {
   app.use('/admin', express.static(path.join(__dirname, '..', '..', 'admin')));
   app.use(express.static(path.join(__dirname, '..', '..')));
 
-  app.use('/api/auth', require('../../routes/auth'));
-  app.use('/api/berita', require('../../routes/berita'));
-  app.use('/api/galeri', require('../../routes/galeri'));
-  app.use('/api/program', require('../../routes/program'));
-  app.use('/api/umkm', require('../../routes/umkm'));
-  app.use('/api/kas', require('../../routes/kas'));
-  app.use('/api/pengurus', require('../../routes/pengurus'));
-  app.use('/api/pendaftar', require('../../routes/pendaftar'));
+  const tryRoute = (path, filepath) => {
+    try { app.use(path, require(filepath)); } catch (e) { console.error(`${path} route:`, e.message); app.use(path, (req, res) => res.status(500).json({ error: `${path} unavailable: ${e.message}` })); }
+  };
+  tryRoute('/api/auth', '../../routes/auth');
+  tryRoute('/api/berita', '../../routes/berita');
+  tryRoute('/api/galeri', '../../routes/galeri');
+  tryRoute('/api/program', '../../routes/program');
+  tryRoute('/api/umkm', '../../routes/umkm');
+  tryRoute('/api/kas', '../../routes/kas');
+  tryRoute('/api/pengurus', '../../routes/pengurus');
+  tryRoute('/api/pendaftar', '../../routes/pendaftar');
 
   app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
     res.sendFile(path.join(__dirname, '..', '..', 'admin', 'index.html'), (err) => {
@@ -42,10 +45,16 @@ try {
 } catch (err) {
   console.error('FATAL: Function initialization failed:', err?.message || err);
   const errorApp = require('express')();
-  errorApp.all('*', (req, res) => {
+  errorApp.all(/^\/?(?:api\/.*)?$/, (req, res) => {
     res.status(500).json({
       error: 'Server initialization failed',
-      detail: err?.message || 'Unknown error'
+      detail: err?.message || err?.stack || 'Unknown error'
+    });
+  });
+  errorApp.get(/^\/.*$/, (req, res) => {
+    res.status(500).json({
+      error: 'Server initialization failed',
+      detail: err?.message || err?.stack || 'Unknown error'
     });
   });
   handler = serverless(errorApp);
