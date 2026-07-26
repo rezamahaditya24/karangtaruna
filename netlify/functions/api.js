@@ -27,13 +27,15 @@ app.use('/api/kas', require('../../routes/kas'));
 app.use('/api/pengurus', require('../../routes/pengurus'));
 app.use('/api/pendaftar', require('../../routes/pendaftar'));
 
+app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
+  res.sendFile(path.join(__dirname, '..', '..', 'admin', 'index.html'), (err) => {
+    if (err) res.status(503).json({ error: 'Admin panel unavailable' });
+  });
+});
+
 app.use((err, req, res, next) => {
   console.error('Function error:', err.message || err);
   res.status(500).json({ error: err.message || 'Terjadi kesalahan server' });
-});
-
-app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'admin', 'index.html'));
 });
 
 const handler = serverless(app);

@@ -11,7 +11,7 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(400).json({ error: 'Username atau password salah.' });
     }
-    const valid = bcrypt.compareSync(password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(400).json({ error: 'Username atau password salah.' });
     }

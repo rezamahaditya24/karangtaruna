@@ -2,16 +2,9 @@ const router = require('express').Router();
 const db = require('../config/db');
 const auth = require('../middleware/auth');
 const multer = require('multer');
-const path = require('path');
+const { uploadFile } = require('../config/supabase');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, unique + path.extname(file.originalname));
-  }
-});
-const upload = multer({ storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/', async (req, res) => {
   try {
@@ -25,7 +18,10 @@ router.get('/', async (req, res) => {
 router.post('/', auth, upload.single('gambar'), async (req, res) => {
   try {
     const { judul, deskripsi } = req.body;
-    const gambar = req.file ? '/uploads/' + req.file.filename : null;
+    let gambar = null;
+    if (req.file) {
+      gambar = await uploadFile(req.file, 'galeri');
+    }
     const result = await db.run(
       'INSERT INTO galeri (judul, gambar, deskripsi) VALUES (?, ?, ?)',
       [judul, gambar, deskripsi]
@@ -40,8 +36,9 @@ router.put('/:id', auth, upload.single('gambar'), async (req, res) => {
   try {
     const { judul, deskripsi } = req.body;
     if (req.file) {
+      const gambar = await uploadFile(req.file, 'galeri');
       await db.run('UPDATE galeri SET judul=?, gambar=?, deskripsi=? WHERE id=?',
-        [judul, '/uploads/' + req.file.filename, deskripsi, req.params.id]);
+        [judul, gambar, deskripsi, req.params.id]);
     } else {
       await db.run('UPDATE galeri SET judul=?, deskripsi=? WHERE id=?',
         [judul, deskripsi, req.params.id]);

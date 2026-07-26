@@ -40,11 +40,6 @@ try {
       return { text, values: params || [] };
     }
 
-    function isInsertReturning(sql) {
-      const upper = sql.trim().toUpperCase();
-      return upper.startsWith('INSERT') && !upper.includes('RETURNING');
-    }
-
     db = {
       query: async (sql, params) => {
         const { text, values } = convert(sql, params);
@@ -58,13 +53,9 @@ try {
       },
       run: async (sql, params) => {
         const { text, values } = convert(sql, params);
-        let finalSql = text;
-        let finalValues = values;
-        if (isInsertReturning(text)) {
-          const returning = text.trim().endsWith(')') ? ' RETURNING id' : '';
-          finalSql = text + returning;
-        }
-        const result = await pool.query(finalSql, finalValues);
+        const isInsert = text.trim().toUpperCase().startsWith('INSERT') && !text.toUpperCase().includes('RETURNING');
+        const finalSql = isInsert ? text + ' RETURNING id' : text;
+        const result = await pool.query(finalSql, values);
         const row = result.rows?.[0];
         return { lastInsertRowid: row?.id || 0, changes: result.rowCount || 0 };
       },
@@ -75,13 +66,11 @@ try {
       try {
         const existing = await db.get('SELECT id, username FROM users WHERE LOWER(username) = LOWER(?)', ['admin']);
         if (!existing) {
-          const salt = bcrypt.genSaltSync(10);
-          const hash = bcrypt.hashSync('Admin123', salt);
+          const hash = await bcrypt.hash('Admin123', 10);
           await db.run('INSERT INTO users (username, password) VALUES (?, ?)', ['Admin', hash]);
           console.log('Default admin user created: Admin / Admin123');
         } else if (existing.username !== 'Admin') {
-          const salt = bcrypt.genSaltSync(10);
-          const hash = bcrypt.hashSync('Admin123', salt);
+          const hash = await bcrypt.hash('Admin123', 10);
           await db.run('UPDATE users SET username = ?, password = ? WHERE id = ?', ['Admin', hash, existing.id]);
           console.log('Default admin user updated: Admin / Admin123');
         }
