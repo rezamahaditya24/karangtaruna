@@ -4,6 +4,10 @@ const path = require('path');
 const serverless = require('serverless-http');
 require('dotenv').config();
 
+if (!process.env.DATABASE_URL && !process.env.MYSQL_URL && !process.env.DB_PATH) {
+  console.warn('WARNING: DATABASE_URL not set. Database features will fail.');
+}
+
 const app = express();
 
 app.use(cors());
@@ -22,6 +26,11 @@ app.use('/api/umkm', require('../../routes/umkm'));
 app.use('/api/kas', require('../../routes/kas'));
 app.use('/api/pengurus', require('../../routes/pengurus'));
 app.use('/api/pendaftar', require('../../routes/pendaftar'));
+
+app.use((err, req, res, next) => {
+  console.error('Function error:', err.message || err);
+  res.status(500).json({ error: err.message || 'Terjadi kesalahan server' });
+});
 
 app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'admin', 'index.html'));
