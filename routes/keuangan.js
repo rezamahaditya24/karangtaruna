@@ -128,7 +128,7 @@ router.post('/transaksi/:id/tolak', auth, authorize('pengurus', 'bendahara', 'su
   }
 });
 
-router.post('/transaksi/:id/koreksi', auth, upload.none(), authorize('bendahara', 'super_admin'), async (req, res) => {
+router.post('/transaksi/:id/koreksi', auth, upload.single('bukti'), authorize('bendahara', 'super_admin'), async (req, res) => {
   try {
     const tx = await db.get('SELECT * FROM transaksi WHERE id = ?', [req.params.id]);
     if (!tx) return res.status(404).json({ error: 'Transaksi tidak ditemukan.' });
@@ -136,9 +136,15 @@ router.post('/transaksi/:id/koreksi', auth, upload.none(), authorize('bendahara'
     if (!tipe || !kategori || !jumlah || !deskripsi) return res.status(400).json({ error: 'Lengkapi semua field wajib.' });
     const nominal = parseFloat(jumlah);
     if (isNaN(nominal) || nominal <= 0) return res.status(400).json({ error: 'Jumlah harus angka positif.' });
+    let buktiUrl = null;
+    if (req.file) {
+      buktiUrl = await uploadFile(req.file, 'bukti');
+    } else {
+      buktiUrl = tx.bukti_url;
+    }
     const result = await db.run(
       'INSERT INTO transaksi (tipe, kategori, jumlah, deskripsi, kegiatan_id, bukti_url, status, created_by, koreksi_dari_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [tipe || tx.tipe, kategori || tx.kategori, nominal || tx.jumlah, deskripsi || tx.deskripsi, kegiatan_id || tx.kegiatan_id, tx.bukti_url, 'draft', req.user.id, tx.id]
+      [tipe || tx.tipe, kategori || tx.kategori, nominal || tx.jumlah, deskripsi || tx.deskripsi, kegiatan_id || tx.kegiatan_id, buktiUrl, 'draft', req.user.id, tx.id]
     );
     await logActivity(req.user.id, 'koreksi_transaksi', `Koreksi transaksi #${req.params.id} -> #${result.lastInsertRowid}`);
     res.json({ id: result.lastInsertRowid, message: 'Koreksi berhasil dibuat sebagai transaksi baru. Menunggu verifikasi.' });

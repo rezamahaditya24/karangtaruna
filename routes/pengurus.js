@@ -1,6 +1,10 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const auth = require('../middleware/auth');
+const multer = require('multer');
+const { uploadFile } = require('../config/supabase');
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/', async (req, res) => {
   try {
@@ -11,12 +15,16 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, upload.single('foto'), async (req, res) => {
   try {
-    const { nama, jabatan, foto } = req.body;
+    const { nama, jabatan } = req.body;
+    let foto = null;
+    if (req.file) {
+      foto = await uploadFile(req.file, 'pengurus');
+    }
     const result = await db.run(
       'INSERT INTO pengurus (nama, jabatan, foto) VALUES (?, ?, ?)',
-      [nama, jabatan || null, foto || null]
+      [nama, jabatan || null, foto]
     );
     res.json({ id: result.lastInsertRowid, message: 'Pengurus berhasil ditambahkan.' });
   } catch (err) {
@@ -24,9 +32,13 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, upload.single('foto'), async (req, res) => {
   try {
-    const { nama, jabatan, foto } = req.body;
+    const { nama, jabatan } = req.body;
+    let foto = req.body.foto;
+    if (req.file) {
+      foto = await uploadFile(req.file, 'pengurus');
+    }
     await db.run(
       'UPDATE pengurus SET nama=?, jabatan=?, foto=? WHERE id=?',
       [nama, jabatan, foto, req.params.id]

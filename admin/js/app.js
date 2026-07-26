@@ -204,7 +204,8 @@ function editBerita(item) {
       <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal" value="${item.tanggal || ''}"></div>
       <div class="form-group"><label>Status</label><select name="status"><option value="publish" ${item.status === 'publish' ? 'selected' : ''}>Publish</option><option value="draft" ${item.status === 'draft' ? 'selected' : ''}>Draft</option></select></div>
     </div>
-    <div class="form-group"><label>URL Gambar</label><input type="text" name="gambar" value="${escapeHtml(item.gambar || '')}" placeholder="/uploads/nama-file.jpg"></div>
+    <div class="form-group"><label>Ganti Gambar</label><input type="file" name="gambar" accept="image/*"></div>
+    ${item.gambar ? `<p style="font-size:12px;color:#666">Gambar saat ini: ${item.gambar}</p>` : ''}
   `;
   document.getElementById('formModal').classList.add('show');
 }
@@ -415,7 +416,8 @@ function editPengurus(item) {
   document.getElementById('formFields').innerHTML = `
     <div class="form-group"><label>Nama Lengkap</label><input type="text" name="nama" value="${escapeHtml(item.nama)}" required></div>
     <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan" value="${escapeHtml(item.jabatan || '')}"></div>
-    <div class="form-group"><label>URL Foto</label><input type="text" name="foto" value="${escapeHtml(item.foto || '')}" placeholder="/uploads/nama-file.jpg"></div>
+    <div class="form-group"><label>Ganti Foto</label><input type="file" name="foto" accept="image/*"></div>
+    ${item.foto ? `<p style="font-size:12px;color:#666">Foto saat ini: ${item.foto}</p>` : ''}
   `;
   document.getElementById('formModal').classList.add('show');
 }
@@ -467,7 +469,7 @@ function openForm(entity) {
           <div class="form-group"><label>Tanggal</label><input type="date" name="tanggal"></div>
           <div class="form-group"><label>Status</label><select name="status"><option value="publish">Publish</option><option value="draft">Draft</option></select></div>
         </div>
-        <div class="form-group"><label>URL Gambar</label><input type="text" name="gambar" placeholder="/uploads/nama-file.jpg"></div>`;
+        <div class="form-group"><label>Gambar</label><input type="file" name="gambar" accept="image/*"></div>`;
       break;
     case 'galeri':
       fields = `
@@ -509,7 +511,7 @@ function openForm(entity) {
       fields = `
         <div class="form-group"><label>Nama Lengkap</label><input type="text" name="nama" required></div>
         <div class="form-group"><label>Jabatan</label><input type="text" name="jabatan"></div>
-        <div class="form-group"><label>URL Foto</label><input type="text" name="foto" placeholder="/uploads/nama-file.jpg"></div>`;
+        <div class="form-group"><label>Foto</label><input type="file" name="foto" accept="image/*"></div>`;
       break;
   }
   document.getElementById('formFields').innerHTML = fields;
@@ -537,16 +539,12 @@ document.getElementById('dataForm').addEventListener('submit', async (e) => {
   }
 
   try {
-    if (entity === 'galeri') {
-      if (!id || formData.get('gambar').size > 0) {
-        await apiFetch(url, { method, body: formData });
-      } else {
-        const data = Object.fromEntries(formData.entries());
-        delete data.gambar;
-        await apiFetch(url, { method, body: JSON.stringify(data) });
-      }
+    const hasFile = ['galeri', 'berita', 'pengurus'].includes(entity);
+    if (hasFile && (!id || Array.from(formData.entries()).some(e => e[1] instanceof File && e[1].size > 0))) {
+      await apiFetch(url, { method, body: formData });
     } else {
       const data = Object.fromEntries(formData.entries());
+      if (hasFile) { delete data.gambar; delete data.foto; }
       if (entity === 'kas') {
         data.pemasukan = parseFloat(data.pemasukan) || 0;
         data.pengeluaran = parseFloat(data.pengeluaran) || 0;

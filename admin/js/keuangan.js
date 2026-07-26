@@ -183,6 +183,7 @@ async function koreksiKeuanganTransaksi(id) {
       <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" value="${t.jumlah}" min="1" required></div>
       <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required>${escapeHtml(t.deskripsi)}</textarea></div>
       <div class="form-group"><label>Kegiatan (opsional)</label><select name="kegiatan_id"><option value="">Tidak terkait kegiatan</option></select></div>
+      <div class="form-group"><label>Upload Bukti Baru (opsional)</label><input type="file" name="bukti" accept="image/*"></div>
     `;
     loadKegiatanOptions('keuanganFormFields', t.kegiatan_id);
     document.getElementById('keuanganModal').classList.add('show');
