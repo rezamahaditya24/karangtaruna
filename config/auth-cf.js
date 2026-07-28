@@ -97,10 +97,27 @@ export async function migratePassword(password, stored, supabase, userId) {
 }
 
 export function authorize(roles, user) {
-  const hierarchy = { anggota: 0, pengurus: 1, bendahara: 2, super_admin: 3 };
+  const hierarchy = { anggota: 0, pengurus: 1, ketua: 2, bendahara: 3, super_admin: 4 };
   const userLevel = hierarchy[user?.role] ?? 0;
   const minLevel = Math.min(...roles.map(r => hierarchy[r] ?? 0));
   if (userLevel < minLevel) throw new Error('Akses ditolak. Tidak memiliki izin yang cukup.');
+}
+
+export function authorizeCreate(user, section, subSection = '') {
+  if (user?.role === 'super_admin') return;
+  const role = user?.role || 'anggota';
+  if (section === 'kas') {
+    if (['bendahara', 'ketua'].includes(role)) return;
+  }
+  if (section === 'keuangan') {
+    if (subSection === 'transaksi' && ['bendahara', 'ketua'].includes(role)) return;
+    if (['anggaran', 'iuran'].includes(subSection) && role === 'bendahara') return;
+  }
+  throw new Error('Akses ditolak. Tidak memiliki izin untuk membuat data.');
+}
+
+export function authorizeModify(user) {
+  authorize(['super_admin'], user);
 }
 
 export function extractToken(request) {

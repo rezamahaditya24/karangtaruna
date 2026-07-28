@@ -22,6 +22,7 @@ async function initializeAuth() {
     }
   }
   applyRoleBasedMenu(role);
+  applyRoleBasedUI(role);
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('sidebar').style.display = 'block';
   document.querySelector('.main-content').style.display = 'block';
@@ -112,8 +113,7 @@ document.getElementById('overlay').addEventListener('click', () => {
 
 function navigateTo(page) {
   if (!token) return;
-  const allowedKeuanganPages = ['keuangan', 'keuangan-transaksi', 'keuangan-anggaran', 'keuangan-iuran'];
-  if (role !== 'super_admin' && !allowedKeuanganPages.includes(page)) {
+  if (!canViewPage(page)) {
     page = 'keuangan';
   }
   currentPage = page;
@@ -172,6 +172,49 @@ async function apiFetch(url, options = {}) {
   return data;
 }
 
+function getAllowedPages(role) {
+  if (role === 'super_admin') return null;
+  return ['dashboard', 'kas', 'keuangan', 'keuangan-transaksi', 'keuangan-anggaran', 'keuangan-iuran'];
+}
+
+function canViewPage(page) {
+  if (role === 'super_admin') return true;
+  return getAllowedPages(role)?.includes(page);
+}
+
+function canCreateEntity(entity) {
+  if (role === 'super_admin') return true;
+  if (['kas', 'keuangan/transaksi', 'keuangan/anggaran', 'keuangan/iuran'].includes(entity)) return ['bendahara', 'ketua'].includes(role);
+  return false;
+}
+
+function canEditDelete() {
+  return role === 'super_admin';
+}
+
+function canVerifyTransaksi() {
+  return ['bendahara', 'super_admin'].includes(role);
+}
+
+function canLockTransaksi() {
+  return role === 'super_admin';
+}
+
+function canCorrectTransaksi() {
+  return ['bendahara', 'super_admin'].includes(role);
+}
+
+function canManageUsers() {
+  return role === 'super_admin';
+}
+
+function applyRoleBasedUI(currentRole) {
+  document.querySelectorAll('[data-create-entity]').forEach(btn => {
+    const allowed = canCreateEntity(btn.dataset.createEntity);
+    btn.style.display = allowed ? 'inline-flex' : 'none';
+  });
+}
+
 // ============== DASHBOARD ==============
 async function loadDashboard() {
   try {
@@ -212,8 +255,7 @@ async function loadBerita() {
       <td>${formatDate(item.tanggal)}</td>
       <td><span class="badge ${item.status === 'publish' ? 'badge-success' : 'badge-warning'}">${item.status}</span></td>
       <td>
-        <button class="btn btn-warning btn-sm" onclick='editBerita(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('berita', ${item.id})">Hapus</button>
+        ${canEditDelete() ? `<button class="btn btn-warning btn-sm" onclick='editBerita(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button> <button class="btn btn-danger btn-sm" onclick="confirmDelete('berita', ${item.id})">Hapus</button>` : '<span style="color:#999">Tidak tersedia</span>'}
       </td>
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
@@ -222,6 +264,10 @@ async function loadBerita() {
 }
 
 function editBerita(item) {
+  if (!canEditDelete()) {
+    alert('Akses ditolak. Anda tidak memiliki izin mengubah berita.');
+    return;
+  }
   currentEntity = 'berita';
   editingId = item.id;
   document.getElementById('modalTitle').textContent = 'Edit Berita';
@@ -293,8 +339,7 @@ async function loadProgram() {
       <td><span class="badge badge-success">${item.tipe}</span></td>
       <td>${escapeHtml(item.jadwal || '')}</td>
       <td>
-        <button class="btn btn-warning btn-sm" onclick='editProgram(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('program', ${item.id})">Hapus</button>
+        ${canEditDelete() ? `<button class="btn btn-warning btn-sm" onclick='editProgram(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button> <button class="btn btn-danger btn-sm" onclick="confirmDelete('program', ${item.id})">Hapus</button>` : '<span style="color:#999">Tidak tersedia</span>'}
       </td>
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
@@ -335,8 +380,7 @@ async function loadUmkm() {
       <td><span class="badge badge-success">${escapeHtml(item.kategori || '-')}</span></td>
       <td>${escapeHtml(item.no_hp || '-')}</td>
       <td>
-        <button class="btn btn-warning btn-sm" onclick='editUmkm(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('umkm', ${item.id})">Hapus</button>
+        ${canEditDelete() ? `<button class="btn btn-warning btn-sm" onclick='editUmkm(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button> <button class="btn btn-danger btn-sm" onclick="confirmDelete('umkm', ${item.id})">Hapus</button>` : '<span style="color:#999">Tidak tersedia</span>'}
       </td>
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
@@ -388,8 +432,7 @@ async function loadKas() {
       <td style="color:#28a745">${item.pemasukan > 0 ? 'Rp ' + formatNumber(item.pemasukan) : '-'}</td>
       <td style="color:#dc3545">${item.pengeluaran > 0 ? 'Rp ' + formatNumber(item.pengeluaran) : '-'}</td>
       <td>
-        <button class="btn btn-warning btn-sm" onclick='editKas(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('kas', ${item.id})">Hapus</button>
+        ${canEditDelete() ? `<button class="btn btn-warning btn-sm" onclick='editKas(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button> <button class="btn btn-danger btn-sm" onclick="confirmDelete('kas', ${item.id})">Hapus</button>` : '<span style="color:#999">Tidak tersedia</span>'}
       </td>
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
@@ -428,8 +471,7 @@ async function loadPengurus() {
       <td><strong>${escapeHtml(item.nama)}</strong></td>
       <td>${escapeHtml(item.jabatan || '-')}</td>
       <td>
-        <button class="btn btn-warning btn-sm" onclick='editPengurus(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('pengurus', ${item.id})">Hapus</button>
+        ${canEditDelete() ? `<button class="btn btn-warning btn-sm" onclick='editPengurus(${JSON.stringify(item).replace(/'/g, "&#39;")})'>Edit</button> <button class="btn btn-danger btn-sm" onclick="confirmDelete('pengurus', ${item.id})">Hapus</button>` : '<span style="color:#999">Tidak tersedia</span>'}
       </td>
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
@@ -467,7 +509,7 @@ async function loadPendaftar() {
       <td>${escapeHtml(item.no_hp || '-')}</td>
       <td>${escapeHtml(item.pekerjaan || '-')}</td>
       <td>${formatDate(item.created_at)}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="confirmDelete('pendaftar', ${item.id})">Hapus</button></td>
+      <td>${canEditDelete() ? `<button class="btn btn-danger btn-sm" onclick="confirmDelete('pendaftar', ${item.id})">Hapus</button>` : '<span style="color:#999">Tidak tersedia</span>'}</td>
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
     container.innerHTML = `<div class="empty-state"><p>Gagal memuat data: ${err.message}</p></div>`;
@@ -476,6 +518,10 @@ async function loadPendaftar() {
 
 // ============== FORM HANDLING ==============
 function openForm(entity) {
+  if (!canCreateEntity(entity)) {
+    alert('Akses ditolak. Anda tidak memiliki izin untuk menambah data ini.');
+    return;
+  }
   currentEntity = entity;
   editingId = null;
   const titles = {
@@ -590,6 +636,10 @@ document.getElementById('dataForm').addEventListener('submit', async (e) => {
 let deleteTarget = { entity: '', id: null };
 
 function confirmDelete(entity, id) {
+  if (!canEditDelete()) {
+    alert('Akses ditolak. Anda tidak memiliki izin menghapus data.');
+    return;
+  }
   deleteTarget = { entity, id };
   document.getElementById('confirmModal').classList.add('show');
 }
@@ -636,14 +686,15 @@ function formatDate(date) {
 }
 
 function applyRoleBasedMenu(role) {
-  const visibleForNonAdmin = ['keuangan', 'keuangan-transaksi', 'keuangan-anggaran', 'keuangan-iuran'];
+  const allowedPages = getAllowedPages(role);
   document.querySelectorAll('.sidebar nav a').forEach(a => {
     if (role === 'super_admin') {
       a.style.display = 'flex';
       return;
     }
-    a.style.display = visibleForNonAdmin.includes(a.dataset.page) ? 'flex' : 'none';
+    a.style.display = allowedPages.includes(a.dataset.page) ? 'flex' : 'none';
   });
+  applyRoleBasedUI(role);
 }
 
 // ============== AI CHAT ==============

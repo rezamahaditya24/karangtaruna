@@ -87,7 +87,7 @@
     <!-- Berita Page -->
     <div id="page-berita" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Daftar Berita</h2><button class="btn btn-primary" onclick="openForm('berita')">+ Tambah Berita</button></div>
+        <div class="card-header"><h2>Daftar Berita</h2><button class="btn btn-primary" data-create-entity="berita" onclick="openForm('berita')">+ Tambah Berita</button></div>
         <div class="table-container" id="beritaTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
       </div>
     </div>
@@ -95,7 +95,7 @@
     <!-- Galeri Page -->
     <div id="page-galeri" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Galeri Foto</h2><button class="btn btn-primary" onclick="openForm('galeri')">+ Tambah Foto</button></div>
+        <div class="card-header"><h2>Galeri Foto</h2><button class="btn btn-primary" data-create-entity="galeri" onclick="openForm('galeri')">+ Tambah Foto</button></div>
         <div id="galeriContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
       </div>
     </div>
@@ -103,7 +103,7 @@
     <!-- Program Page -->
     <div id="page-program" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Program Kerja</h2><button class="btn btn-primary" onclick="openForm('program')">+ Tambah Program</button></div>
+        <div class="card-header"><h2>Program Kerja</h2><button class="btn btn-primary" data-create-entity="program" onclick="openForm('program')">+ Tambah Program</button></div>
         <div class="table-container" id="programTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
       </div>
     </div>
@@ -111,7 +111,7 @@
     <!-- UMKM Page -->
     <div id="page-umkm" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Data UMKM</h2><button class="btn btn-primary" onclick="openForm('umkm')">+ Tambah UMKM</button></div>
+        <div class="card-header"><h2>Data UMKM</h2><button class="btn btn-primary" data-create-entity="umkm" onclick="openForm('umkm')">+ Tambah UMKM</button></div>
         <div class="table-container" id="umkmTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
       </div>
     </div>
@@ -120,7 +120,7 @@
     <div id="page-kas" class="page-section">
       <div class="stats-grid" id="kasSummary" style="margin-bottom:20px"></div>
       <div class="card">
-        <div class="card-header"><h2>Transaksi Kas</h2><button class="btn btn-primary" onclick="openForm('kas')">+ Tambah Transaksi</button></div>
+        <div class="card-header"><h2>Transaksi Kas</h2><button class="btn btn-primary" data-create-entity="kas" onclick="openForm('kas')">+ Tambah Transaksi</button></div>
         <div class="table-container" id="kasTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
       </div>
     </div>
@@ -128,7 +128,7 @@
     <!-- Pengurus Page -->
     <div id="page-pengurus" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Struktur Pengurus</h2><button class="btn btn-primary" onclick="openForm('pengurus')">+ Tambah Pengurus</button></div>
+        <div class="card-header"><h2>Struktur Pengurus</h2><button class="btn btn-primary" data-create-entity="pengurus" onclick="openForm('pengurus')">+ Tambah Pengurus</button></div>
         <div class="table-container" id="pengurusTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat data...</p></div></div>
       </div>
     </div>
@@ -176,7 +176,7 @@
             </select>
             <input type="text" id="filterSearch" placeholder="Cari transaksi..." style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
             <button class="btn btn-primary" onclick="loadKeuanganTransaksi()">🔍 Cari</button>
-            <button class="btn btn-success" onclick="openKeuanganForm()">+ Tambah Transaksi</button>
+            <button class="btn btn-success" data-create-entity="keuangan/transaksi" onclick="openKeuanganForm()">+ Tambah Transaksi</button>
           </div>
         </div>
         <div class="table-container" id="keuanganTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat transaksi...</p></div></div>
@@ -186,7 +186,7 @@
     <!-- Keuangan Anggaran -->
     <div id="page-keuangan-anggaran" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Anggaran per Kegiatan</h2><button class="btn btn-success" onclick="openKeuanganAnggaranForm()">+ Tambah Anggaran</button></div>
+        <div class="card-header"><h2>Anggaran per Kegiatan</h2><button class="btn btn-success" data-create-entity="keuangan/anggaran" onclick="openKeuanganAnggaranForm()">+ Tambah Anggaran</button></div>
         <div class="table-container" id="keuanganAnggaranContainer"><div class="loading"><div class="spinner"></div><p>Memuat anggaran...</p></div></div>
       </div>
     </div>
@@ -194,7 +194,7 @@
     <!-- Keuangan Iuran -->
     <div id="page-keuangan-iuran" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Iuran Anggota</h2><button class="btn btn-success" onclick="openKeuanganIuranForm()">+ Catat Pembayaran</button></div>
+        <div class="card-header"><h2>Iuran Anggota</h2><button class="btn btn-success" data-create-entity="keuangan/iuran" onclick="openKeuanganIuranForm()">+ Catat Pembayaran</button></div>
         <div class="table-container" id="keuanganIuranContainer"><div class="loading"><div class="spinner"></div><p>Memuat iuran...</p></div></div>
       </div>
     </div>
@@ -210,7 +210,7 @@
     <!-- Keuangan Users -->
     <div id="page-keuangan-users" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Manajemen User & Role</h2><button class="btn btn-success btn-sm" onclick="openTambahUser()">+ Tambah User</button></div>
+        <div class="card-header"><h2>Manajemen User & Role</h2><button class="btn btn-success btn-sm" data-create-entity="keuangan/users" onclick="openTambahUser()">+ Tambah User</button></div>
         <div class="table-container" id="keuanganUsersContainer"><div class="loading"><div class="spinner"></div><p>Memuat data user...</p></div></div>
       </div>
     </div>

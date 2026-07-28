@@ -1,5 +1,5 @@
 import { createClient } from '../config/supabase-rest.js';
-import { authenticate, signJWT, verifyPassword, authorize, migratePassword, hashPassword } from '../config/auth-cf.js';
+import { authenticate, signJWT, verifyPassword, authorize, authorizeCreate, authorizeModify, migratePassword, hashPassword } from '../config/auth-cf.js';
 
 let localEnvLoaded = false;
 async function loadLocalEnv() {
@@ -60,6 +60,17 @@ function getSegments(path) {
   return path.replace(/^\/api\/?/, '').split('/').filter(Boolean);
 }
 
+function isCreateEndpoint(segments) {
+  const [first, second] = segments;
+  if (segments.length === 1 && ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus', 'pendaftar'].includes(first)) return true;
+  if (segments.length === 2 && first === 'keuangan' && ['transaksi', 'anggaran', 'iuran'].includes(second)) return true;
+  return false;
+}
+
+function isKeuanganCommentRoute(segments) {
+  return segments[0] === 'keuangan' && segments[1] === 'transaksi' && segments[2] === 'komentar';
+}
+
 export async function handleAPI(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -78,12 +89,23 @@ export async function handleAPI(request, env) {
   const publicTables = ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus'];
   const adminTables = ['pendaftar', 'keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'];
   let user = null;
-  if (publicTables.includes(segments[0]) || adminTables.includes(segments[0])) {
-    const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
-    const isPublicRegister = segments[0] === 'pendaftar' && method === 'POST';
-    if (!isPublicGet && !isPublicRegister) {
-      try { user = await authenticate(request, env); }
-      catch (e) { return error(e.message, 401); }
+  const isPublicRegister = segments[0] === 'pendaftar' && method === 'POST';
+  const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
+  if (!isPublicGet && !isPublicRegister) {
+    try { user = await authenticate(request, env); }
+    catch (e) { return error(e.message, 401); }
+  }
+
+  const s = segments.slice(1);
+  if (user && method !== 'GET') {
+    if (isKeuanganCommentRoute(segments)) {
+      // Allow all authenticated users to comment on transaksi.
+    } else if (method === 'POST') {
+      if (isCreateEndpoint(segments)) {
+        authorizeCreate(user, segments[0], s[0]);
+      }
+    } else if (method === 'PUT' || method === 'DELETE') {
+      authorizeModify(user);
     }
   }
 
@@ -92,7 +114,7 @@ export async function handleAPI(request, env) {
     try { user = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
     if (!body.message) return error('Pesan tidak boleh kosong.');
     const geminiKey = env.GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
-    const geminiModel = env.GEMINI_MODEL || (typeof process !== 'undefined' && process.env?.GEMINI_MODEL) || 'gemini-2.0';
+    const geminiModel = env.GEMINI_MODEL || (typeof process !== 'undefined' && process.env?.GEMINI_MODEL) || 'gemini-2.5-flash';
     if (!geminiKey) {
       return error('AI tidak dapat digunakan karena GEMINI_API_KEY belum diatur. Silakan tambahkan GEMINI_API_KEY di .env atau secret Cloudflare Workers.', 500);
     }
@@ -110,7 +132,7 @@ Halaman yang tersedia: Dashboard, Berita, Galeri, Program Kerja, UMKM, Kas, Peng
 
 Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang konkret dan bisa langsung digunakan.`;
 
-    const modelName = geminiModel.trim() || 'gemini-2.0';
+    const modelName = geminiModel.trim() || 'gemini-2.5-flash';
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${geminiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -130,7 +152,7 @@ Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang kon
       return error(`AI error: ${apiMessage}`, res.status);
     }
     const data = await res.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, AI tidak dapat merespon saat ini.';
+    const reply = data?.candidates?.[0]?.output || data?.candidates?.[0]?.content?.parts?.[0]?.text || data?.candidates?.[0]?.content?.[0]?.text || 'Maaf, AI tidak dapat merespon saat ini.';
     return json({ reply });
   }
 
