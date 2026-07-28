@@ -215,7 +215,7 @@ export async function handleAPI(request, env) {
     };
 
     if (!geminiKey) {
-      const reply = buildLocalReply(body.message, body.page);
+      const reply = buildLocalReply(body.message, body.page, body.role);
       return json({ reply });
     }
 
@@ -231,7 +231,11 @@ Anda membantu admin mengelola:
 
 Halaman yang tersedia: Dashboard, Berita, Galeri, Program Kerja, UMKM, Kas, Pengurus, Pendaftar, Keuangan (Transaksi, Anggaran, Iuran, Log, Manajemen User).
 
-Jika pengguna meminta create/update/delete, berikan langkah-langkah praktis dalam konteks halaman yang disebutkan. Jelaskan juga batasan berdasarkan role saat ini: super_admin punya akses penuh; bendahara dan ketua dapat membuat atau mengelola transaksi keuangan; anggota hanya melihat data terbatas.
+Jika pengguna meminta create/update/delete, berikan langkah-langkah praktis dalam konteks halaman yang disebutkan. Jelaskan juga batasan berdasarkan role saat ini: super_admin punya akses penuh; bendahara dan ketua dapat membuat atau mengelola transaksi keuangan; anggota hanya melihat data terbatas.`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${geminiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nPertanyaan admin: ${body.message}` }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
