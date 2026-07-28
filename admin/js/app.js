@@ -61,27 +61,35 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const data = await res.json();
     if (res.ok) {
       token = data.token;
-      // Persist token first so subsequent /auth/me can authenticate
+      // Persist token first
       localStorage.setItem('token', token);
-      // Try to fetch profile to get authoritative role/username
+      // Fetch profile directly (bypass apiFetch 401-handler) to avoid immediate session clear
       try {
-        const profile = await apiFetch(`${API}/auth/me`);
-        role = profile.role || data.role || 'anggota';
-        localStorage.setItem('role', role);
-        localStorage.setItem('username', profile.username || data.username || 'Admin');
-        applyRoleBasedMenu(role);
-        applyRoleBasedUI(role);
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('sidebar').style.display = 'block';
-        document.querySelector('.main-content').style.display = 'block';
-        document.getElementById('displayUsername').textContent = profile.username || data.username || 'Admin';
-        navigateTo('dashboard');
+        const profileRes = await fetch(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          role = profile.role || data.role || 'anggota';
+          localStorage.setItem('role', role);
+          localStorage.setItem('username', profile.username || data.username || 'Admin');
+        } else {
+          // fallback: use role from login response or default
+          role = data.role || 'anggota';
+          localStorage.setItem('role', role);
+          localStorage.setItem('username', data.username || 'Admin');
+        }
       } catch (e) {
-        // If profile fetch fails, clear token and show message
-        localStorage.removeItem('token');
-        const errEl = document.getElementById('loginError');
-        if (errEl) { errEl.textContent = 'Gagal memverifikasi sesi. Silakan coba lagi.'; errEl.style.display = 'block'; }
+        // network error - fallback to login response
+        role = data.role || 'anggota';
+        localStorage.setItem('role', role);
+        localStorage.setItem('username', data.username || 'Admin');
       }
+      applyRoleBasedMenu(role);
+      applyRoleBasedUI(role);
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('sidebar').style.display = 'block';
+      document.querySelector('.main-content').style.display = 'block';
+      document.getElementById('displayUsername').textContent = localStorage.getItem('username') || data.username || 'Admin';
+      navigateTo('dashboard');
     } else {
       errorEl.textContent = data.error;
       errorEl.style.display = 'block';
