@@ -61,6 +61,18 @@ export async function handleAPI(request, env) {
     file = parsed.file;
   }
 
+  const publicTables = ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus'];
+  const adminTables = ['pendaftar', 'keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'];
+  let user = null;
+  if (publicTables.includes(segments[0]) || adminTables.includes(segments[0])) {
+    const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
+    const isPublicRegister = segments[0] === 'pendaftar' && method === 'POST';
+    if (!isPublicGet && !isPublicRegister) {
+      try { user = await authenticate(request, env); }
+      catch (e) { return error(e.message, 401); }
+    }
+  }
+
   // ===================== AI CHAT =====================
   if (segments[0] === 'ai' && segments[1] === 'chat' && method === 'POST') {
     try { user = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
@@ -111,25 +123,13 @@ Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang kon
   // ===================== AUTH =====================
   if (segments[0] === 'auth' && segments[1] === 'login' && method === 'POST') {
     if (!body.username || !body.password) return error('Username dan password wajib diisi.');
-    const user = await supabase.get('users', { username: `eq.${body.username.toLowerCase()}` });
-    if (!user) return error('Username atau password salah.', 400);
-    let valid = await verifyPassword(body.password, user.password);
+    const authUser = await supabase.get('users', { username: `eq.${body.username.toLowerCase()}` });
+    if (!authUser) return error('Username atau password salah.', 400);
+    let valid = await verifyPassword(body.password, authUser.password);
     if (!valid) return error('Username atau password salah.', 400);
-    await migratePassword(body.password, user.password, supabase, user.id);
-    const token = await signJWT({ id: user.id, username: user.username, role: user.role || 'anggota' }, env.JWT_SECRET);
-    return json({ token, username: user.username });
-  }
-
-  const publicTables = ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus'];
-  const adminTables = ['pendaftar', 'keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'];
-  let user = null;
-  if (publicTables.includes(segments[0]) || adminTables.includes(segments[0])) {
-    const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
-    const isPublicRegister = segments[0] === 'pendaftar' && method === 'POST';
-    if (!isPublicGet && !isPublicRegister) {
-      try { user = await authenticate(request, env); }
-      catch (e) { return error(e.message, 401); }
-    }
+    await migratePassword(body.password, authUser.password, supabase, authUser.id);
+    const token = await signJWT({ id: authUser.id, username: authUser.username, role: authUser.role || 'anggota' }, env.JWT_SECRET);
+    return json({ token, username: authUser.username });
   }
 
   const id = segments.length > 1 ? segments[1] : null;
