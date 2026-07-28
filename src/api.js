@@ -318,6 +318,7 @@ Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang kon
       if (method === 'POST') {
         authorize(['super_admin'], user);
         if (!body.username || !body.password) return error('Username dan password wajib diisi.');
+        if (body.role && !['anggota', 'pengurus', 'ketua', 'bendahara', 'super_admin'].includes(body.role)) return error('Role tidak valid.');
         const existing = await supabase.get('users', { username: `eq.${body.username.toLowerCase()}` });
         if (existing) return error('Username sudah digunakan.');
         const hashed = await hashPassword(body.password);
@@ -326,7 +327,7 @@ Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang kon
       }
       if (s[2] === 'role' && method === 'PUT') {
         authorize(['super_admin'], user);
-        if (!['anggota', 'pengurus', 'bendahara', 'super_admin'].includes(body.role)) return error('Role tidak valid.');
+        if (!['anggota', 'pengurus', 'ketua', 'bendahara', 'super_admin'].includes(body.role)) return error('Role tidak valid.');
         await supabase.update('users', { role: body.role }, { id: `eq.${s[1]}` });
         return json({ message: 'Role diperbarui.' });
       }

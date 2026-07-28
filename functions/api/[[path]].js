@@ -222,7 +222,7 @@ export async function onRequest(context) {
         if (method === 'GET') { authorize(['super_admin'], user); return json(await supabase.query('users', { select: 'id,username,role,display_name,created_at', order: 'id.asc' })); }
         if (s[2] === 'role' && method === 'PUT') {
           authorize(['super_admin'], user);
-          if (!['anggota', 'pengurus', 'bendahara', 'super_admin'].includes(body.role)) return error('Role tidak valid.');
+          if (!['anggota', 'pengurus', 'ketua', 'bendahara', 'super_admin'].includes(body.role)) return error('Role tidak valid.');
           await supabase.update('users', { role: body.role }, { id: `eq.${s[1]}` });
           return json({ message: 'Role diperbarui.' });
         }

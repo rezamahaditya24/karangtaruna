@@ -379,7 +379,7 @@ async function loadKeuanganUsers() {
       <td>${u.id}</td>
       <td>${escapeHtml(u.username)}</td>
       <td>${escapeHtml(u.display_name || '-')}</td>
-      <td><span class="badge ${u.role === 'super_admin' ? 'badge-success' : u.role === 'bendahara' ? 'badge-primary' : u.role === 'pengurus' ? 'badge-warning' : 'badge-secondary'}">${escapeHtml(u.role)}</span></td>
+      <td><span class="badge ${u.role === 'super_admin' ? 'badge-success' : u.role === 'bendahara' ? 'badge-primary' : u.role === 'ketua' ? 'badge-info' : u.role === 'pengurus' ? 'badge-warning' : 'badge-secondary'}">${escapeHtml(u.role)}</span></td>
       <td>${formatDate(u.created_at)}</td>
       <td><button class="btn btn-sm btn-warning" onclick="ubahRoleUser(${u.id}, '${escapeHtml(u.role)}')">Ubah Role</button></td>
     </tr>`).join('')}</tbody></table>`;
@@ -408,8 +408,8 @@ document.getElementById('tambahUserForm')?.addEventListener('submit', async func
 });
 
 async function ubahRoleUser(id, currentRole) {
-  const roles = ['anggota', 'pengurus', 'bendahara', 'super_admin'];
-  const role = prompt(`Ubah role user #${id} (${currentRole}):\nPilih: anggota, pengurus, bendahara, super_admin`, currentRole);
+  const roles = ['anggota', 'pengurus', 'ketua', 'bendahara', 'super_admin'];
+  const role = prompt(`Ubah role user #${id} (${currentRole}):\nPilih: anggota, pengurus, ketua, bendahara, super_admin`, currentRole);
   if (!role || !roles.includes(role)) return;
   try {
     await apiFetch(`${API}/keuangan/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) });
