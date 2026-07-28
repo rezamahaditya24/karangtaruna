@@ -78,8 +78,9 @@ export async function handleAPI(request, env) {
     try { user = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
     if (!body.message) return error('Pesan tidak boleh kosong.');
     const geminiKey = env.GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
+    const geminiModel = env.GEMINI_MODEL || (typeof process !== 'undefined' && process.env?.GEMINI_MODEL) || 'gemini-2.0';
     if (!geminiKey) {
-      return error('AI tidak dapat digunakan karena GEMINI_API_KEY belum diatur. Silakan tambahkan GEMINI_API_KEY di wrangler.toml atau secret Cloudflare Workers.', 500);
+      return error('AI tidak dapat digunakan karena GEMINI_API_KEY belum diatur. Silakan tambahkan GEMINI_API_KEY di .env atau secret Cloudflare Workers.', 500);
     }
     const systemPrompt = `Anda adalah asisten AI untuk panel admin Karang Taruna Manunggal Bhakti. 
 Anda membantu admin mengelola:
@@ -95,7 +96,8 @@ Halaman yang tersedia: Dashboard, Berita, Galeri, Program Kerja, UMKM, Kas, Peng
 
 Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang konkret dan bisa langsung digunakan.`;
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+    const modelName = geminiModel.trim() || 'gemini-2.0';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${geminiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -109,7 +111,7 @@ Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang kon
       try { parsedError = JSON.parse(errText); } catch (e) { }
       const apiMessage = parsedError?.error?.message || errText || `Status ${res.status}`;
       if (res.status === 429) {
-        return error('AI tidak dapat diproses saat ini karena kuota habis. Silakan cek batasan kuota atau coba lagi nanti.', 429);
+        return error(`AI tidak dapat diproses saat ini karena kuota habis pada model ${modelName}. Silakan coba model lain dengan mengatur GEMINI_MODEL di .env atau cek batasan kuota.`, 429);
       }
       return error(`AI error: ${apiMessage}`, res.status);
     }
