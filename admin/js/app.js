@@ -188,16 +188,14 @@ function navigateTo(page) {
 // API helper
 async function apiFetch(url, options = {}) {
   const headers = { ...options.headers };
-  // Read token from localStorage at call time to avoid stale in-memory value
   const latestToken = localStorage.getItem('token') || token;
   if (latestToken) headers['Authorization'] = `Bearer ${latestToken}`;
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
   const res = await fetch(url, { ...options, headers });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
-    // Normalize auth errors: force logout and show friendly message
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('username');
@@ -207,8 +205,8 @@ async function apiFetch(url, options = {}) {
     document.getElementById('sidebar').style.display = 'none';
     document.querySelector('.main-content').style.display = 'none';
     const errEl = document.getElementById('loginError');
-    if (errEl) { errEl.textContent = 'Sesi tidak valid atau kedaluwarsa. Silakan login ulang.'; errEl.style.display = 'block'; }
-    throw new Error('Sesi tidak valid. Silakan login ulang.');
+    if (errEl) { errEl.textContent = data.error || 'Sesi tidak valid atau kedaluwarsa. Silakan login ulang.'; errEl.style.display = 'block'; }
+    throw new Error(data.error || 'Sesi tidak valid. Silakan login ulang.');
   }
   if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
   return data;
@@ -764,7 +762,10 @@ async function sendAIChat() {
   addAILoading();
   const page = window.location.hash.replace('#', '') || 'dashboard';
   try {
-    const data = await apiFetch(`/api/ai/chat`, { method: 'POST', body: JSON.stringify({ message: msg, page }) });
+    const data = await apiFetch(`/api/ai/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message: msg, page, role })
+    });
     removeAILoading();
     addAIMessage(data.reply, 'assistant');
   } catch (err) {

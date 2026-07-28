@@ -117,34 +117,101 @@ export async function handleAPI(request, env) {
     const geminiKey = env.GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
     const geminiModel = env.GEMINI_MODEL || (typeof process !== 'undefined' && process.env?.GEMINI_MODEL) || 'gemini-2.5-flash';
 
-    const buildLocalReply = (message, page) => {
+    const buildLocalReply = (message, page, role = 'anggota') => {
       const text = (message || '').trim().toLowerCase();
-      const pageLabel = page || 'dashboard';
-      if (text.includes('berita')) {
-        return `Untuk membuat berita, gunakan judul yang jelas dan ringkas, jelaskan siapa, apa, kapan, di mana, dan mengapa. Contoh: \"[Judul] – [Ringkasan singkat].\" Tambahkan deskripsi singkat kegiatan dan panggilan untuk bertindak jika perlu.`;
+      const currentPage = page || 'dashboard';
+      const normalizedRole = (role || 'anggota').toLowerCase();
+      const roleHint = normalizedRole === 'super_admin' ? 'Sebagai super_admin, Anda punya akses penuh untuk membuat, mengedit, dan menghapus data.' :
+        normalizedRole === 'bendahara' ? 'Sebagai bendahara, Anda bisa membuat dan mengelola transaksi keuangan serta anggaran, tetapi Anda bukan super_admin.' :
+        normalizedRole === 'ketua' ? 'Sebagai ketua, Anda bisa membuat transaksi dan laporan kas, tetapi penghapusan dan pengelolaan user dibatasi.' :
+        'Sebagai anggota, akses Anda terbatas pada melihat dashboard dan beberapa laporan.';
+
+      const pageNames = {
+        dashboard: 'Dashboard',
+        berita: 'Kelola Berita',
+        galeri: 'Kelola Galeri',
+        program: 'Kelola Program Kerja',
+        umkm: 'Kelola UMKM',
+        kas: 'Kelola Kas',
+        pengurus: 'Kelola Pengurus',
+        pendaftar: 'Data Pendaftar',
+        'keuangan-transaksi': 'Transaksi Keuangan',
+        'keuangan-anggaran': 'Anggaran Kegiatan',
+        'keuangan-iuran': 'Iuran Anggota',
+        'keuangan-log': 'Log Aktivitas',
+        'keuangan-users': 'Manajemen User'
+      };
+      const pageTitle = pageNames[currentPage] || 'Dashboard';
+
+      if (text.includes('fitur') || text.includes('halaman') || text.includes('menu')) {
+        return `Panel admin terdiri dari: \n- Dashboard: statistik, ringkasan keuangan, jumlah berita, galeri, program, UMKM, pengurus, dan pendaftar.\n- Berita: tambah/sunting/hapus konten berita.\n- Galeri: unggah foto dan deskripsi.\n- Program Kerja: kelola kegiatan organisasi.\n- UMKM: kelola usaha anggota.\n- Kas: kelola transaksi kas, anggaran, dan iuran.\n- Pengurus: kelola data pengurus.\n- Pendaftar: lihat dan hapus data pendaftar.\n${roleHint}`;
       }
-      if (text.includes('galeri') || text.includes('foto')) {
-        return `Untuk galeri, tulis deskripsi foto singkat dan menarik. Sebutkan lokasi, kegiatan, atau nama orang jika perlu. Contohnya: \"Foto suasana acara pembukaan dengan pengurus dan peserta hadir.\"`;
+
+      if (text.includes('buat') || text.includes('tambah') || text.includes('menambah')) {
+        if (currentPage === 'berita') {
+          return `${roleHint} Untuk menambahkan berita, buka halaman Berita, klik tombol Tambah Berita, lalu isi judul, isi, tanggal, status, dan unggah gambar jika perlu. Jika Anda bukan super_admin, fitur tambah berita tidak tersedia.`;
+        }
+        if (currentPage === 'galeri') {
+          return `${roleHint} Untuk menambahkan galeri, buka halaman Galeri, klik Tambah Foto, unggah gambar, isi judul dan deskripsi. Perhatikan bahwa hanya super_admin dapat menambah galeri saat ini.`;
+        }
+        if (currentPage === 'program') {
+          return `${roleHint} Untuk menambahkan program kerja, buka halaman Program Kerja, klik Tambah Program, lalu isi judul, deskripsi, tipe, jadwal, dan icon.`;
+        }
+        if (currentPage === 'umkm') {
+          return `${roleHint} Untuk menambahkan UMKM, buka halaman UMKM, klik Tambah UMKM, lalu isi nama usaha, pemilik, kategori, deskripsi, dan nomor HP.`;
+        }
+        if (currentPage === 'kas' || currentPage.startsWith('keuangan')) {
+          if (!['bendahara', 'ketua', 'super_admin'].includes(normalizedRole)) {
+            return `Role ${normalizedRole} tidak diizinkan menambahkan transaksi keuangan. Hanya bendahara, ketua, atau super_admin yang dapat membuat data keuangan.`;
+          }
+          return `${roleHint} Untuk menambahkan transaksi, buka halaman Kas, klik Tambah Transaksi, pilih tanggal, isi deskripsi, kategori, dan masukkan jumlah pemasukan atau pengeluaran.`;
+        }
+        if (currentPage === 'pengurus') {
+          return `${roleHint} Untuk menambahkan pengurus, buka halaman Pengurus, klik Tambah Pengurus, lalu isi nama, jabatan, dan unggah foto.`;
+        }
+        return `Untuk membuat data di halaman ${pageTitle}, buka halaman tersebut dan cari tombol Tambah. ${roleHint}`;
       }
-      if (text.includes('program') || text.includes('kerja')) {
-        return `Untuk program kerja, jelaskan tujuan, sasaran, waktu pelaksanaan, dan manfaat. Contoh: \"Program gotong royong lingkungan bertujuan membersihkan area RT setiap Sabtu pagi untuk meningkatkan kebersihan dan kebersamaan.\"`;
+
+      if (text.includes('edit') || text.includes('ubah') || text.includes('perbarui')) {
+        if (!['super_admin'].includes(normalizedRole)) {
+          return `Role ${normalizedRole} tidak memiliki izin untuk mengedit data secara umum. Hanya super_admin yang dapat melakukan edit atau update di sebagian besar entitas.`;
+        }
+        return `${roleHint} Untuk mengedit, buka halaman ${pageTitle}, cari data yang ingin diubah, klik Edit, lalu perbarui field yang diperlukan.`;
       }
-      if (text.includes('umkm') || text.includes('usaha')) {
-        return `Untuk UMKM, jelaskan produk atau layanan, keunikan, dan kontak. Contoh: \"UMKM makanan ringan dengan resep khas lokal, melayani pesanan takeaway dan delivery.\"`;
+
+      if (text.includes('hapus') || text.includes('delete')) {
+        if (!['super_admin'].includes(normalizedRole)) {
+          return `Role ${normalizedRole} tidak memiliki izin untuk menghapus data. Hanya super_admin yang dapat melakukan penghapusan.`;
+        }
+        return `${roleHint} Untuk menghapus data, buka halaman ${pageTitle}, klik Hapus pada baris data yang relevan, lalu konfirmasi aksi.`;
       }
-      if (text.includes('pengurus') || text.includes('jabatan')) {
-        return `Untuk profil pengurus, sebutkan nama, jabatan, dan tugas utama. Contoh: \"Nama, jabatan, serta peran dalam mengkoordinasi kegiatan organisasi.\"`;
+
+      if (currentPage === 'dashboard') {
+        return `Di Dashboard Anda dapat melihat ringkasan statistik: jumlah berita, galeri, program kerja, UMKM, saldo kas, data pengurus, dan pendaftar. Untuk menggunakan fitur lainnya, pilih menu di sisi kiri. ${roleHint}`;
       }
-      if (text.includes('kas') || text.includes('keuangan') || text.includes('anggaran')) {
-        return `Untuk keuangan, gunakan bahasa sederhana: sumber pemasukan, jenis pengeluaran, dan status saldo. Contoh: \"Pemasukan berasal dari iuran anggota, sedangkan pengeluaran digunakan untuk pembelian alat kegiatan.\"`;
+
+      if (currentPage === 'berita') {
+        return `Halaman Berita digunakan untuk mengelola artikel kegiatan. ${roleHint} Klik Tambah Berita untuk membuat konten baru, atau Edit/Hapus untuk memperbarui konten yang sudah ada.`;
       }
-      if (text.includes('pendaftar') || text.includes('daftar')) {
-        return `Untuk pendaftar, berikan ringkasan proses validasi dan status. Contoh: \"Cek data pendaftar lalu verifikasi jika lengkap.\"`;
+      if (currentPage === 'galeri') {
+        return `Halaman Galeri digunakan untuk mengunggah dan mengelola foto kegiatan. ${roleHint} Gunakan tombol Tambah Foto untuk upload gambar baru.`;
       }
-      if (text.includes('login') || text.includes('akses ditolak')) {
-        return `Pastikan Anda masuk dengan username dan password yang benar. Jika masih muncul pesan akses ditolak, coba refresh halaman, lalu login ulang. Jika masih gagal, periksa konfigurasi token atau secret di backend.`;
+      if (currentPage === 'program') {
+        return `Halaman Program Kerja digunakan untuk mencatat kegiatan dan jadwal program. ${roleHint} Gunakan tombol Tambah Program untuk membuat catatan program baru.`;
       }
-      return `Saya siap membantu. Silakan tanyakan dalam konteks admin Karang Taruna: contoh \"Buat judul berita tentang kegiatan sosial\" atau \"Beri saran deskripsi UMKM\".`;
+      if (currentPage === 'umkm') {
+        return `Halaman UMKM digunakan untuk mengelola bisnis anggota. ${roleHint} Tambahkan data UMKM baru dengan tombol Tambah UMKM.`;
+      }
+      if (currentPage === 'kas' || currentPage.startsWith('keuangan')) {
+        return `Halaman Keuangan mencakup transaksi, anggaran, iuran, dan log. ${roleHint} Gunakan menu Kas untuk menambah transaksi dan dashboard keuangan untuk melihat ringkasan saldo.`;
+      }
+      if (currentPage === 'pengurus') {
+        return `Halaman Pengurus digunakan untuk mengelola data pengurus organisasi. ${roleHint} Tambah atau edit profil pengurus di sini.`;
+      }
+      if (currentPage === 'pendaftar') {
+        return `Halaman Pendaftar menampilkan calon anggota yang mendaftar. ${roleHint} Gunakan halaman ini untuk melihat data dan menghapus pendaftar bila perlu.`;
+      }
+      return `Saya siap membantu. Silakan tanyakan tentang halaman admin, fitur, atau aksi yang ingin Anda lakukan. Sebutkan halaman atau perintah seperti buat, edit, hapus.`;
     };
 
     if (!geminiKey) {
@@ -159,17 +226,12 @@ Anda membantu admin mengelola:
 - Program: mendeskripsikan program kerja
 - UMKM: mendeskripsikan usaha
 - Pengurus: menulis profil pengurus
-- Kas/Keuangan: analisis keuangan sederhana
+- Kas/Keuangan: analisis keuangan sederhana dan transaksi
 - Pendaftar: membantu verifikasi
 
 Halaman yang tersedia: Dashboard, Berita, Galeri, Program Kerja, UMKM, Kas, Pengurus, Pendaftar, Keuangan (Transaksi, Anggaran, Iuran, Log, Manajemen User).
 
-Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang konkret dan bisa langsung digunakan.`;
-
-    const modelName = geminiModel.trim() || 'gemini-2.5-flash';
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${geminiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+Jika pengguna meminta create/update/delete, berikan langkah-langkah praktis dalam konteks halaman yang disebutkan. Jelaskan juga batasan berdasarkan role saat ini: super_admin punya akses penuh; bendahara dan ketua dapat membuat atau mengelola transaksi keuangan; anggota hanya melihat data terbatas.
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nPertanyaan admin: ${body.message}` }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
