@@ -389,11 +389,11 @@ async function loadKeuanganUsers() {
 }
 
 function openTambahUser() {
-  document.getElementById('tambahUserModal').classList.add('active');
+  document.getElementById('tambahUserModal').classList.add('show');
 }
 
 function closeTambahUser() {
-  document.getElementById('tambahUserModal').classList.remove('active');
+  document.getElementById('tambahUserModal').classList.remove('show');
   document.getElementById('tambahUserForm').reset();
 }
 

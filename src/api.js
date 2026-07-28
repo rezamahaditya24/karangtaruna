@@ -103,7 +103,13 @@ Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang kon
     });
     if (!res.ok) {
       const errText = await res.text();
-      return error(`AI error: ${res.status} ${errText}`, 500);
+      let parsedError = null;
+      try { parsedError = JSON.parse(errText); } catch (e) { }
+      const apiMessage = parsedError?.error?.message || errText || `Status ${res.status}`;
+      if (res.status === 429) {
+        return error('AI tidak dapat diproses saat ini karena kuota habis. Silakan cek batasan kuota atau coba lagi nanti.', 429);
+      }
+      return error(`AI error: ${apiMessage}`, res.status);
     }
     const data = await res.json();
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, AI tidak dapat merespon saat ini.';
