@@ -1,17 +1,38 @@
 const API = '/api';
 let token = localStorage.getItem('token');
+let role = localStorage.getItem('role');
 let currentPage = 'dashboard';
 let editingId = null;
 let currentEntity = '';
 
-// Auth check
-if (token) {
+async function initializeAuth() {
+  if (!token) return;
+  if (!role) {
+    try {
+      const data = await apiFetch(`${API}/auth/me`);
+      role = data.role || 'anggota';
+      localStorage.setItem('role', role);
+      localStorage.setItem('username', data.username || localStorage.getItem('username') || 'Admin');
+    } catch (err) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('username');
+      location.reload();
+      return;
+    }
+  }
+  applyRoleBasedMenu(role);
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('sidebar').style.display = 'block';
   document.querySelector('.main-content').style.display = 'block';
   document.getElementById('displayUsername').textContent = localStorage.getItem('username') || 'Admin';
   navigateTo(window.location.hash.slice(1) || 'dashboard');
-} else {
+}
+
+initializeAuth();
+
+// Auth check
+if (!token) {
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('sidebar').style.display = 'none';
   document.querySelector('.main-content').style.display = 'none';
@@ -32,8 +53,11 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const data = await res.json();
     if (res.ok) {
       token = data.token;
+      role = data.role || 'anggota';
       localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
       localStorage.setItem('username', data.username);
+      applyRoleBasedMenu(role);
       document.getElementById('loginPage').style.display = 'none';
       document.getElementById('sidebar').style.display = 'block';
       document.querySelector('.main-content').style.display = 'block';
@@ -88,6 +112,10 @@ document.getElementById('overlay').addEventListener('click', () => {
 
 function navigateTo(page) {
   if (!token) return;
+  const allowedKeuanganPages = ['keuangan', 'keuangan-transaksi', 'keuangan-anggaran', 'keuangan-iuran'];
+  if (role !== 'super_admin' && !allowedKeuanganPages.includes(page)) {
+    page = 'keuangan';
+  }
   currentPage = page;
   window.location.hash = page;
   const titles = {
@@ -605,6 +633,17 @@ function formatDate(date) {
   if (!date) return '-';
   const d = new Date(date);
   return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function applyRoleBasedMenu(role) {
+  const visibleForNonAdmin = ['keuangan', 'keuangan-transaksi', 'keuangan-anggaran', 'keuangan-iuran'];
+  document.querySelectorAll('.sidebar nav a').forEach(a => {
+    if (role === 'super_admin') {
+      a.style.display = 'flex';
+      return;
+    }
+    a.style.display = visibleForNonAdmin.includes(a.dataset.page) ? 'flex' : 'none';
+  });
 }
 
 // ============== AI CHAT ==============

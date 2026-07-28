@@ -135,7 +135,12 @@ Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang kon
     if (!valid) return error('Username atau password salah.', 400);
     await migratePassword(body.password, authUser.password, supabase, authUser.id);
     const token = await signJWT({ id: authUser.id, username: authUser.username, role: authUser.role || 'anggota' }, env.JWT_SECRET);
-    return json({ token, username: authUser.username });
+    return json({ token, username: authUser.username, role: authUser.role || 'anggota' });
+  }
+
+  if (segments[0] === 'auth' && segments[1] === 'me' && method === 'GET') {
+    try { user = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
+    return json({ username: user.username, role: user.role || 'anggota', display_name: user.display_name || '' });
   }
 
   const id = segments.length > 1 ? segments[1] : null;
