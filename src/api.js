@@ -91,7 +91,8 @@ export async function handleAPI(request, env) {
   let user = null;
   const isPublicRegister = segments[0] === 'pendaftar' && method === 'POST';
   const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
-  if (!isPublicGet && !isPublicRegister) {
+  const isAuthRoute = segments[0] === 'auth';
+  if (!isAuthRoute && !isPublicGet && !isPublicRegister) {
     try { user = await authenticate(request, env); }
     catch (e) { return error(e.message, 401); }
   }

@@ -128,6 +128,10 @@ export function extractToken(request) {
 
 export async function authenticate(request, env) {
   const token = extractToken(request);
-  if (!token) throw new Error('Akses ditolak. Silakan login terlebih dahulu.');
-  return await verifyJWT(token, env.JWT_SECRET);
+  if (!token) throw new Error('Akses ditolak. Silakan login terlebih dahulu. (Authorization header missing)');
+  try {
+    return await verifyJWT(token, env.JWT_SECRET);
+  } catch (e) {
+    throw new Error(`Akses ditolak. Token tidak valid: ${e.message}`);
+  }
 }
