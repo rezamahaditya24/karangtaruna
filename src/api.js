@@ -1,6 +1,19 @@
 import { createClient } from '../config/supabase-rest.js';
 import { authenticate, signJWT, verifyPassword, authorize, migratePassword, hashPassword } from '../config/auth-cf.js';
 
+let localEnvLoaded = false;
+async function loadLocalEnv() {
+  if (typeof process !== 'undefined' && process.env && !localEnvLoaded) {
+    try {
+      const dotenv = await import('dotenv');
+      dotenv.config();
+    } catch (e) {
+      // ignore if dotenv is unavailable in Workers environment
+    }
+    localEnvLoaded = true;
+  }
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type,Authorization' }
@@ -54,6 +67,7 @@ export async function handleAPI(request, env) {
   const segments = getSegments(path);
   const supabase = createClient(env);
 
+  await loadLocalEnv();
   let body = {}, file = null;
   if (method === 'POST' || method === 'PUT') {
     const parsed = await parseBody(request);
