@@ -6,7 +6,7 @@ let editingId = null;
 let currentEntity = '';
 
 async function initializeAuth() {
-  if (!token) return;
+  if (!localStorage.getItem('token')) return;
   if (!role) {
     try {
       const data = await apiFetch(`${API}/auth/me`);
@@ -14,10 +14,17 @@ async function initializeAuth() {
       localStorage.setItem('role', role);
       localStorage.setItem('username', data.username || localStorage.getItem('username') || 'Admin');
     } catch (err) {
+      // Clear invalid session and show login with message (avoid full reload)
       localStorage.removeItem('token');
       localStorage.removeItem('role');
       localStorage.removeItem('username');
-      location.reload();
+      token = null;
+      role = null;
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('sidebar').style.display = 'none';
+      document.querySelector('.main-content').style.display = 'none';
+      const errEl = document.getElementById('loginError');
+      if (errEl) { errEl.textContent = 'Sesi tidak valid. Silakan login ulang.'; errEl.style.display = 'block'; }
       return;
     }
   }
@@ -162,7 +169,9 @@ function navigateTo(page) {
 // API helper
 async function apiFetch(url, options = {}) {
   const headers = { ...options.headers };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  // Read token from localStorage at call time to avoid stale in-memory value
+  const latestToken = localStorage.getItem('token') || token;
+  if (latestToken) headers['Authorization'] = `Bearer ${latestToken}`;
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
