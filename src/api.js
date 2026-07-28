@@ -121,9 +121,9 @@ export async function handleAPI(request, env) {
       const text = (message || '').trim().toLowerCase();
       const currentPage = page || 'dashboard';
       const normalizedRole = (role || 'anggota').toLowerCase();
-      const roleHint = normalizedRole === 'super_admin' ? 'Sebagai super_admin, Anda punya akses penuh untuk membuat, mengedit, dan menghapus data.' :
-        normalizedRole === 'bendahara' ? 'Sebagai bendahara, Anda bisa membuat dan mengelola transaksi keuangan serta anggaran, tetapi Anda bukan super_admin.' :
-        normalizedRole === 'ketua' ? 'Sebagai ketua, Anda bisa membuat transaksi dan laporan kas, tetapi penghapusan dan pengelolaan user dibatasi.' :
+      const roleHint = normalizedRole === 'super_admin' ? 'Anda memiliki akses penuh untuk membuat, mengedit, dan menghapus data.' :
+        normalizedRole === 'bendahara' ? 'Sebagai bendahara, Anda bisa membuat dan mengelola transaksi keuangan serta anggaran, tetapi akses pengelolaan user terbatas.' :
+        normalizedRole === 'ketua' ? 'Sebagai ketua, Anda bisa membuat transaksi dan laporan kas, tetapi akses pengelolaan user terbatas.' :
         'Sebagai anggota, akses Anda terbatas pada melihat dashboard dan beberapa laporan.';
 
       const pageNames = {
@@ -143,8 +143,16 @@ export async function handleAPI(request, env) {
       };
       const pageTitle = pageNames[currentPage] || 'Dashboard';
 
-      if (text.includes('fitur') || text.includes('halaman') || text.includes('menu')) {
-        return `Panel admin terdiri dari: \n- Dashboard: statistik, ringkasan keuangan, jumlah berita, galeri, program, UMKM, pengurus, dan pendaftar.\n- Berita: tambah/sunting/hapus konten berita.\n- Galeri: unggah foto dan deskripsi.\n- Program Kerja: kelola kegiatan organisasi.\n- UMKM: kelola usaha anggota.\n- Kas: kelola transaksi kas, anggaran, dan iuran.\n- Pengurus: kelola data pengurus.\n- Pendaftar: lihat dan hapus data pendaftar.\n${roleHint}`;
+      if (text.includes('fitur') || text.includes('halaman') || text.includes('menu') || text.includes('manajemen user')) {
+        return `Panel admin terdiri dari: \n- Dashboard: statistik, ringkasan keuangan, jumlah berita, galeri, program, UMKM, pengurus, dan pendaftar.\n- Berita: tambah/sunting/hapus konten berita.\n- Galeri: unggah foto dan deskripsi.\n- Program Kerja: kelola kegiatan organisasi.\n- UMKM: kelola usaha anggota.\n- Kas: kelola transaksi kas, anggaran, dan iuran.\n- Pengurus: kelola data pengurus.\n- Pendaftar: lihat dan hapus data pendaftar.\n- Manajemen User: lihat daftar akun dan role pengguna, dengan beberapa hak akses terbatas.\n${roleHint}`;
+      }
+
+      if (text.includes('manajemen user') || text.includes('role user') || text.includes('kelola user') || text.includes('pengguna')) {
+        const base = `Halaman Manajemen User digunakan untuk melihat daftar akun, mengetahui role, dan mengelola hak akses. `;
+        if (normalizedRole !== 'super_admin') {
+          return `${base}Hanya pengguna dengan hak akses tertinggi yang dapat menambah, mengubah, atau menghapus akun. Saat ini Anda masuk sebagai ${normalizedRole}.`;
+        }
+        return `${base}Sebagai pemegang hak akses tertinggi, Anda dapat menambah akun baru, mengubah role, dan menghapus akun yang tidak lagi diperlukan. Pastikan hanya memberi akses penuh kepada pengguna yang benar-benar membutuhkan.`;
       }
 
       if (text.includes('buat') || text.includes('tambah') || text.includes('menambah')) {
@@ -211,7 +219,36 @@ export async function handleAPI(request, env) {
       if (currentPage === 'pendaftar') {
         return `Halaman Pendaftar menampilkan calon anggota yang mendaftar. ${roleHint} Gunakan halaman ini untuk melihat data dan menghapus pendaftar bila perlu.`;
       }
-      return `Saya siap membantu. Silakan tanyakan tentang halaman admin, fitur, atau aksi yang ingin Anda lakukan. Sebutkan halaman atau perintah seperti buat, edit, hapus.`;
+
+      const pageHelp = {
+        dashboard: `Di Dashboard Anda melihat ringkasan statistik dan dapat memantau kondisi organisasi secara cepat.`,
+        berita: `Halaman Berita digunakan untuk membuat, mengedit, dan menghapus artikel kegiatan.`,
+        galeri: `Halaman Galeri digunakan untuk mengunggah foto kegiatan dan menambahkan deskripsi.`,
+        program: `Halaman Program Kerja digunakan untuk mencatat dan mengelola kegiatan organisasi.`,
+        umkm: `Halaman UMKM digunakan untuk mendata dan mengelola usaha anggota.`,
+        kas: `Halaman Kas digunakan untuk melihat saldo dan ringkasan transaksi.`,
+        pengurus: `Halaman Pengurus digunakan untuk mengelola profil dan jabatan pengurus.`,
+        pendaftar: `Halaman Pendaftar digunakan untuk melihat dan menghapus calon anggota yang mendaftar.`,
+        'keuangan-transaksi': `Halaman Transaksi Keuangan digunakan untuk menambah dan mencatat pemasukan/pengeluaran.`,
+        'keuangan-anggaran': `Halaman Anggaran digunakan untuk mengelola rencana pengeluaran kegiatan.`,
+        'keuangan-iuran': `Halaman Iuran digunakan untuk mencatat iuran anggota.`,
+        'keuangan-log': `Halaman Log mencatat aktivitas sistem dan perubahan keuangan.`,
+        'keuangan-users': `Halaman Manajemen User digunakan untuk melihat daftar akun dan role mereka. Beberapa tindakan hanya dapat dilakukan oleh pengguna dengan akses penuh.`
+      };
+
+      if (text.includes('manajemen user') || text.includes('role user') || text.includes('kelola user') || text.includes('pengguna') || text.includes('user')) {
+        const base = `Halaman Manajemen User digunakan untuk melihat daftar akun, role, dan akses login. `;
+        if (normalizedRole !== 'super_admin') {
+          return `${base}Hanya super_admin dapat menambah, mengubah, atau menghapus user. Saat ini Anda masuk sebagai ${normalizedRole}.`;
+        }
+        return `${base}Sebagai super_admin, Anda dapat menambah user baru, mengubah role, dan menghapus user yang tidak lagi perlu akses.`;
+      }
+
+      if (pageHelp[currentPage]) {
+        return `${pageHelp[currentPage]} ${roleHint}`;
+      }
+
+      return `Halaman ${pageTitle} membantu Anda mengelola data terkait. ${roleHint}`;
     };
 
     if (!geminiKey) {
@@ -228,16 +265,18 @@ Anda membantu admin mengelola:
 - Pengurus: menulis profil pengurus
 - Kas/Keuangan: analisis keuangan sederhana dan transaksi
 - Pendaftar: membantu verifikasi
+- Manajemen User: melihat daftar akun dan role
 
 Halaman yang tersedia: Dashboard, Berita, Galeri, Program Kerja, UMKM, Kas, Pengurus, Pendaftar, Keuangan (Transaksi, Anggaran, Iuran, Log, Manajemen User).
 
-Jika pengguna meminta create/update/delete, berikan langkah-langkah praktis dalam konteks halaman yang disebutkan. Jelaskan juga batasan berdasarkan role saat ini: super_admin punya akses penuh; bendahara dan ketua dapat membuat atau mengelola transaksi keuangan; anggota hanya melihat data terbatas.`;
+Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan menyebut Manajemen User, jelaskan bahwa hanya pengguna dengan hak penuh dapat menambah, mengubah, atau menghapus akun, serta sebutkan batasan role lain. Jangan jawab dengan pesan umum atau default, dan jawab langsung sesuai fitur yang ditanyakan. Jika pertanyaan menanyakan cara, berikan langkah praktis yang relevan.`;
 
+    const promptText = `${systemPrompt}\n\nHalaman aktif: ${pageTitle}\nRole saat ini: ${body.role || 'anggota'}\n\nPertanyaan admin: ${body.message}`;
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${geminiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nPertanyaan admin: ${body.message}` }] }],
+        contents: [{ role: 'user', parts: [{ text: promptText }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
       })
     });
