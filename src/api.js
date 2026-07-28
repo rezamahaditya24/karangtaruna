@@ -77,8 +77,10 @@ export async function handleAPI(request, env) {
   if (segments[0] === 'ai' && segments[1] === 'chat' && method === 'POST') {
     try { user = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
     if (!body.message) return error('Pesan tidak boleh kosong.');
-    const geminiKey = env.GEMINI_API_KEY;
-    if (!geminiKey) return error('AI tidak dikonfigurasi. Hubungi admin.', 500);
+    const geminiKey = env.GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
+    if (!geminiKey) {
+      return error('AI tidak dapat digunakan karena GEMINI_API_KEY belum diatur. Silakan tambahkan GEMINI_API_KEY di wrangler.toml atau secret Cloudflare Workers.', 500);
+    }
     const systemPrompt = `Anda adalah asisten AI untuk panel admin Karang Taruna Manunggal Bhakti. 
 Anda membantu admin mengelola:
 - Berita: menulis judul dan isi berita
