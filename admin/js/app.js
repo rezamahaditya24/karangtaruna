@@ -61,16 +61,27 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const data = await res.json();
     if (res.ok) {
       token = data.token;
-      role = data.role || 'anggota';
+      // Persist token first so subsequent /auth/me can authenticate
       localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
-      localStorage.setItem('username', data.username);
-      applyRoleBasedMenu(role);
-      document.getElementById('loginPage').style.display = 'none';
-      document.getElementById('sidebar').style.display = 'block';
-      document.querySelector('.main-content').style.display = 'block';
-      document.getElementById('displayUsername').textContent = data.username;
-      navigateTo('dashboard');
+      // Try to fetch profile to get authoritative role/username
+      try {
+        const profile = await apiFetch(`${API}/auth/me`);
+        role = profile.role || data.role || 'anggota';
+        localStorage.setItem('role', role);
+        localStorage.setItem('username', profile.username || data.username || 'Admin');
+        applyRoleBasedMenu(role);
+        applyRoleBasedUI(role);
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('sidebar').style.display = 'block';
+        document.querySelector('.main-content').style.display = 'block';
+        document.getElementById('displayUsername').textContent = profile.username || data.username || 'Admin';
+        navigateTo('dashboard');
+      } catch (e) {
+        // If profile fetch fails, clear token and show message
+        localStorage.removeItem('token');
+        const errEl = document.getElementById('loginError');
+        if (errEl) { errEl.textContent = 'Gagal memverifikasi sesi. Silakan coba lagi.'; errEl.style.display = 'block'; }
+      }
     } else {
       errorEl.textContent = data.error;
       errorEl.style.display = 'block';
@@ -177,6 +188,20 @@ async function apiFetch(url, options = {}) {
   }
   const res = await fetch(url, { ...options, headers });
   const data = await res.json();
+  if (res.status === 401) {
+    // Normalize auth errors: force logout and show friendly message
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    token = null;
+    role = null;
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('sidebar').style.display = 'none';
+    document.querySelector('.main-content').style.display = 'none';
+    const errEl = document.getElementById('loginError');
+    if (errEl) { errEl.textContent = 'Sesi tidak valid atau kedaluwarsa. Silakan login ulang.'; errEl.style.display = 'block'; }
+    throw new Error('Sesi tidak valid. Silakan login ulang.');
+  }
   if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
   return data;
 }
