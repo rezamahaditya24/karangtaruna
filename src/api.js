@@ -116,9 +116,42 @@ export async function handleAPI(request, env) {
     if (!body.message) return error('Pesan tidak boleh kosong.');
     const geminiKey = env.GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
     const geminiModel = env.GEMINI_MODEL || (typeof process !== 'undefined' && process.env?.GEMINI_MODEL) || 'gemini-2.5-flash';
+
+    const buildLocalReply = (message, page) => {
+      const text = (message || '').trim().toLowerCase();
+      const pageLabel = page || 'dashboard';
+      if (text.includes('berita')) {
+        return `Untuk membuat berita, gunakan judul yang jelas dan ringkas, jelaskan siapa, apa, kapan, di mana, dan mengapa. Contoh: \"[Judul] – [Ringkasan singkat].\" Tambahkan deskripsi singkat kegiatan dan panggilan untuk bertindak jika perlu.`;
+      }
+      if (text.includes('galeri') || text.includes('foto')) {
+        return `Untuk galeri, tulis deskripsi foto singkat dan menarik. Sebutkan lokasi, kegiatan, atau nama orang jika perlu. Contohnya: \"Foto suasana acara pembukaan dengan pengurus dan peserta hadir.\"`;
+      }
+      if (text.includes('program') || text.includes('kerja')) {
+        return `Untuk program kerja, jelaskan tujuan, sasaran, waktu pelaksanaan, dan manfaat. Contoh: \"Program gotong royong lingkungan bertujuan membersihkan area RT setiap Sabtu pagi untuk meningkatkan kebersihan dan kebersamaan.\"`;
+      }
+      if (text.includes('umkm') || text.includes('usaha')) {
+        return `Untuk UMKM, jelaskan produk atau layanan, keunikan, dan kontak. Contoh: \"UMKM makanan ringan dengan resep khas lokal, melayani pesanan takeaway dan delivery.\"`;
+      }
+      if (text.includes('pengurus') || text.includes('jabatan')) {
+        return `Untuk profil pengurus, sebutkan nama, jabatan, dan tugas utama. Contoh: \"Nama, jabatan, serta peran dalam mengkoordinasi kegiatan organisasi.\"`;
+      }
+      if (text.includes('kas') || text.includes('keuangan') || text.includes('anggaran')) {
+        return `Untuk keuangan, gunakan bahasa sederhana: sumber pemasukan, jenis pengeluaran, dan status saldo. Contoh: \"Pemasukan berasal dari iuran anggota, sedangkan pengeluaran digunakan untuk pembelian alat kegiatan.\"`;
+      }
+      if (text.includes('pendaftar') || text.includes('daftar')) {
+        return `Untuk pendaftar, berikan ringkasan proses validasi dan status. Contoh: \"Cek data pendaftar lalu verifikasi jika lengkap.\"`;
+      }
+      if (text.includes('login') || text.includes('akses ditolak')) {
+        return `Pastikan Anda masuk dengan username dan password yang benar. Jika masih muncul pesan akses ditolak, coba refresh halaman, lalu login ulang. Jika masih gagal, periksa konfigurasi token atau secret di backend.`;
+      }
+      return `Saya siap membantu. Silakan tanyakan dalam konteks admin Karang Taruna: contoh \"Buat judul berita tentang kegiatan sosial\" atau \"Beri saran deskripsi UMKM\".`;
+    };
+
     if (!geminiKey) {
-      return error('AI tidak dapat digunakan karena GEMINI_API_KEY belum diatur. Silakan tambahkan GEMINI_API_KEY di .env atau secret Cloudflare Workers.', 500);
+      const reply = buildLocalReply(body.message, body.page);
+      return json({ reply });
     }
+
     const systemPrompt = `Anda adalah asisten AI untuk panel admin Karang Taruna Manunggal Bhakti. 
 Anda membantu admin mengelola:
 - Berita: menulis judul dan isi berita
