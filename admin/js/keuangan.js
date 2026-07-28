@@ -388,6 +388,25 @@ async function loadKeuanganUsers() {
   }
 }
 
+function openTambahUser() {
+  document.getElementById('tambahUserModal').classList.add('active');
+}
+
+function closeTambahUser() {
+  document.getElementById('tambahUserModal').classList.remove('active');
+  document.getElementById('tambahUserForm').reset();
+}
+
+document.getElementById('tambahUserForm')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  try {
+    await apiFetch(`${API}/keuangan/users`, { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
+    closeTambahUser();
+    loadKeuanganUsers();
+  } catch (err) { alert('Error: ' + err.message); }
+});
+
 async function ubahRoleUser(id, currentRole) {
   const roles = ['anggota', 'pengurus', 'bendahara', 'super_admin'];
   const role = prompt(`Ubah role user #${id} (${currentRole}):\nPilih: anggota, pengurus, bendahara, super_admin`, currentRole);

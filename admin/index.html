@@ -210,7 +210,7 @@
     <!-- Keuangan Users -->
     <div id="page-keuangan-users" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Manajemen User & Role</h2></div>
+        <div class="card-header"><h2>Manajemen User & Role</h2><button class="btn btn-success btn-sm" onclick="openTambahUser()">+ Tambah User</button></div>
         <div class="table-container" id="keuanganUsersContainer"><div class="loading"><div class="spinner"></div><p>Memuat data user...</p></div></div>
       </div>
     </div>
@@ -308,6 +308,55 @@
           <button type="submit" class="btn btn-success">Kirim</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Tambah User -->
+  <div id="tambahUserModal" class="modal">
+    <div class="modal-content" style="max-width:450px">
+      <h3>Tambah User Baru</h3>
+      <form id="tambahUserForm">
+        <div class="form-group"><label>Username</label><input type="text" name="username" required></div>
+        <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
+        <div class="form-group"><label>Nama Tampilan</label><input type="text" name="display_name"></div>
+        <div class="form-group"><label>Role</label>
+          <select name="role">
+            <option value="anggota">Anggota</option>
+            <option value="pengurus">Pengurus</option>
+            <option value="bendahara">Bendahara</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" onclick="closeTambahUser()">Batal</button>
+          <button type="submit" class="btn btn-success">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI Agent Chat -->
+  <div id="aiChatBtn" class="ai-chat-btn" onclick="toggleAIChat()">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.88.53 3.64 1.46 5.12L2 22l5.12-1.46A9.95 9.95 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+  </div>
+
+  <div id="aiChatPanel" class="ai-chat-panel">
+    <div class="ai-chat-header">
+      <span>Asisten AI</span>
+      <button onclick="toggleAIChat()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer">&times;</button>
+    </div>
+    <div class="ai-chat-messages" id="aiChatMessages">
+      <div class="ai-message ai-assistant">
+        <div class="ai-avatar">AI</div>
+        <div class="ai-bubble">Halo! Saya asisten AI admin. Saya bisa membantu menulis berita, deskripsi galeri, program, UMKM, dan lainnya. Ada yang bisa saya bantu?</div>
+      </div>
+    </div>
+    <div class="ai-chat-input">
+      <input type="text" id="aiChatInput" placeholder="Tanya sesuatu..." onkeydown="if(event.key==='Enter') sendAIChat()">
+      <button onclick="sendAIChat()">Kirim</button>
+    </div>
+    <div class="ai-chat-context" id="aiChatContext">
+      <small>Halaman aktif: <span id="aiCurrentPage">-</span></small>
     </div>
   </div>
 

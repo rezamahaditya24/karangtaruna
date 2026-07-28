@@ -61,6 +61,43 @@ export async function handleAPI(request, env) {
     file = parsed.file;
   }
 
+  // ===================== AI CHAT =====================
+  if (segments[0] === 'ai' && segments[1] === 'chat' && method === 'POST') {
+    try { user = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
+    if (!body.message) return error('Pesan tidak boleh kosong.');
+    const geminiKey = env.GEMINI_API_KEY;
+    if (!geminiKey) return error('AI tidak dikonfigurasi. Hubungi admin.', 500);
+    const systemPrompt = `Anda adalah asisten AI untuk panel admin Karang Taruna Manunggal Bhakti. 
+Anda membantu admin mengelola:
+- Berita: menulis judul dan isi berita
+- Galeri: menulis deskripsi foto
+- Program: mendeskripsikan program kerja
+- UMKM: mendeskripsikan usaha
+- Pengurus: menulis profil pengurus
+- Kas/Keuangan: analisis keuangan sederhana
+- Pendaftar: membantu verifikasi
+
+Halaman yang tersedia: Dashboard, Berita, Galeri, Program Kerja, UMKM, Kas, Pengurus, Pendaftar, Keuangan (Transaksi, Anggaran, Iuran, Log, Manajemen User).
+
+Jawab dengan bahasa Indonesia yang ramah dan profesional. Berikan saran yang konkret dan bisa langsung digunakan.`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nPertanyaan admin: ${body.message}` }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+      })
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      return error(`AI error: ${res.status} ${errText}`, 500);
+    }
+    const data = await res.json();
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, AI tidak dapat merespon saat ini.';
+    return json({ reply });
+  }
+
   // ===================== SETUP =====================
   if (segments[0] === 'setup' && method === 'POST') {
     const existing = await supabase.get('users', { limit: '1' });
@@ -204,7 +241,7 @@ export async function handleAPI(request, env) {
   }
 
   // ===================== KEUANGAN =====================
-  if (isKeuangan) {
+  if (adminTables.includes(segments[0])) {
     const sub = segments.slice(1).join('/');
     const s = segments.slice(1);
 
@@ -227,6 +264,15 @@ export async function handleAPI(request, env) {
     // Users
     if (s[0] === 'users') {
       if (method === 'GET') { authorize(['super_admin'], user); return json(await supabase.query('users', { select: 'id,username,role,display_name,created_at', order: 'id.asc' })); }
+      if (method === 'POST') {
+        authorize(['super_admin'], user);
+        if (!body.username || !body.password) return error('Username dan password wajib diisi.');
+        const existing = await supabase.get('users', { username: `eq.${body.username.toLowerCase()}` });
+        if (existing) return error('Username sudah digunakan.');
+        const hashed = await hashPassword(body.password);
+        await supabase.insert('users', { username: body.username.toLowerCase(), password: hashed, role: body.role || 'anggota', display_name: body.display_name || body.username });
+        return json({ message: 'User berhasil ditambahkan.' });
+      }
       if (s[2] === 'role' && method === 'PUT') {
         authorize(['super_admin'], user);
         if (!['anggota', 'pengurus', 'bendahara', 'super_admin'].includes(body.role)) return error('Role tidak valid.');

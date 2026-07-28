@@ -606,3 +606,63 @@ function formatDate(date) {
   const d = new Date(date);
   return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
 }
+
+// ============== AI CHAT ==============
+let aiChatOpen = false;
+
+function toggleAIChat() {
+  const panel = document.getElementById('aiChatPanel');
+  const btn = document.getElementById('aiChatBtn');
+  aiChatOpen = !aiChatOpen;
+  panel.style.display = aiChatOpen ? 'flex' : 'none';
+  btn.style.display = aiChatOpen ? 'none' : 'flex';
+  if (aiChatOpen) {
+    const page = window.location.hash.replace('#', '') || 'dashboard';
+    document.getElementById('aiCurrentPage').textContent = page;
+    setTimeout(() => document.getElementById('aiChatInput')?.focus(), 300);
+  }
+}
+
+async function sendAIChat() {
+  const input = document.getElementById('aiChatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addAIMessage(msg, 'user');
+  addAILoading();
+  const page = window.location.hash.replace('#', '') || 'dashboard';
+  try {
+    const data = await apiFetch(`/api/ai/chat`, { method: 'POST', body: JSON.stringify({ message: msg, page }) });
+    removeAILoading();
+    addAIMessage(data.reply, 'assistant');
+  } catch (err) {
+    removeAILoading();
+    addAIMessage('Maaf, terjadi kesalahan: ' + err.message, 'assistant');
+  }
+}
+
+function addAIMessage(text, role) {
+  const container = document.getElementById('aiChatMessages');
+  const div = document.createElement('div');
+  div.className = 'ai-message ai-' + role;
+  div.innerHTML = role === 'user'
+    ? `<div class="ai-bubble ai-user-bubble">${escapeHtml(text)}</div>`
+    : `<div class="ai-avatar">AI</div><div class="ai-bubble">${escapeHtml(text)}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addAILoading() {
+  const container = document.getElementById('aiChatMessages');
+  const div = document.createElement('div');
+  div.className = 'ai-message ai-assistant';
+  div.id = 'aiLoading';
+  div.innerHTML = '<div class="ai-avatar">AI</div><div class="ai-bubble"><span class="ai-typing">...</span></div>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeAILoading() {
+  const el = document.getElementById('aiLoading');
+  if (el) el.remove();
+}
