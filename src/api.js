@@ -614,7 +614,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         }));
         return json(enriched.map(a => {
           const real = txAll
-            .filter(t => (t.kegiatan === a.kegiatan || t.kegiatan_id === a.kegiatan_id) && t.status === 'terkunci')
+            .filter(t => t.tipe === 'pengeluaran' && t.kategori === a.judul && t.status === 'terkunci')
             .reduce((s, t) => s + parseFloat(t.jumlah), 0);
           return { ...a, realisasi: parseFloat(real) || 0 };
         }));
@@ -697,7 +697,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         const txAll = await supabase.query('transaksi');
         const enriched = await Promise.all(rows.map(async a => {
           const nm = a.kegiatan_id ? (await supabase.get('program', { id: `eq.${a.kegiatan_id}` }))?.judul || null : null;
-          const real = txAll.filter(t => (t.kegiatan === a.kegiatan || t.kegiatan_id === a.kegiatan_id) && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0);
+          const real = txAll.filter(t => t.tipe === 'pengeluaran' && t.kategori === a.judul && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0);
           return { ...a, kegiatan_nama: nm, realisasi: real };
         }));
         const csv = ['Kegiatan,Judul,Rencana,Realisasi,Sisa,Progress (%)',

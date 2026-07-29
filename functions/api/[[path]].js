@@ -366,7 +366,7 @@ export async function onRequest(context) {
           const rows = await supabase.query('anggaran', { order: 'created_at.desc' });
           const enriched = await Promise.all(rows.map(async a => ({ ...a, kegiatan_nama: a.kegiatan_id ? (await supabase.get('program', { id: `eq.${a.kegiatan_id}` }))?.judul || null })));
           const txAll = await supabase.query('transaksi');
-          return json(enriched.map(a => ({ ...a, realisasi: parseFloat(txAll.filter(t => (t.kegiatan === a.kegiatan || t.kegiatan_id === a.kegiatan_id) && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0) || 0) })));
+          return json(enriched.map(a => ({ ...a, realisasi: parseFloat(txAll.filter(t => t.tipe === 'pengeluaran' && t.kategori === a.judul && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0) || 0) })));
         }
         if (!aid && method === 'POST') {
           authorize(['bendahara', 'super_admin'], user);
@@ -446,7 +446,7 @@ export async function onRequest(context) {
           const txAll = await supabase.query('transaksi');
           const enriched = await Promise.all(rows.map(async a => {
             const nm = a.kegiatan_id ? (await supabase.get('program', { id: `eq.${a.kegiatan_id}` }))?.judul || null : null;
-            const real = txAll.filter(t => (t.kegiatan === a.kegiatan || t.kegiatan_id === a.kegiatan_id) && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0);
+            const real = txAll.filter(t => t.tipe === 'pengeluaran' && t.kategori === a.judul && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0);
             return { ...a, kegiatan_nama: nm, realisasi: real };
           }));
           const csv = ['Kegiatan,Judul,Rencana,Realisasi,Sisa,Progress (%)',
