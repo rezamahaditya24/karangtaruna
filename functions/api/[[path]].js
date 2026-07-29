@@ -73,13 +73,19 @@ export async function onRequest(context) {
     // ===================== AUTH =====================
     if (segments[0] === 'auth' && segments[1] === 'login' && method === 'POST') {
       if (!body.username || !body.password) return error('Username dan password wajib diisi.');
-      const user = await supabase.get('users', { username: `eq.${body.username.toLowerCase()}` });
-      if (!user) return error('Username atau password salah.', 400);
-      let valid = await verifyPassword(body.password, user.password);
+      const authUser = await supabase.get('users', { username: `eq.${body.username.toLowerCase()}` });
+      if (!authUser) return error('Username atau password salah.', 400);
+      let valid = await verifyPassword(body.password, authUser.password);
       if (!valid) return error('Username atau password salah.', 400);
-      await migratePassword(body.password, user.password, supabase, user.id);
-      const token = await signJWT({ id: user.id, username: user.username, role: user.role || 'anggota' }, env.JWT_SECRET);
-      return json({ token, username: user.username });
+      await migratePassword(body.password, authUser.password, supabase, authUser.id);
+      const token = await signJWT({ id: authUser.id, username: authUser.username, role: authUser.role || 'anggota' }, env.JWT_SECRET);
+      return json({ token, username: authUser.username, role: authUser.role || 'anggota' });
+    }
+
+    if (segments[0] === 'auth' && segments[1] === 'me' && method === 'GET') {
+      try { var meUser = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
+      const fullUser = await supabase.get('users', { id: `eq.${meUser.id}` });
+      return json({ username: fullUser?.username || meUser.username, role: fullUser?.role || meUser.role || 'anggota', display_name: fullUser?.display_name || '' });
     }
 
     // Auth middleware for protected routes
@@ -148,7 +154,7 @@ export async function onRequest(context) {
       if (method === 'GET' && !id) return json(await supabase.query('umkm', { order: 'created_at.desc' }));
       if (method === 'POST') {
         if (!body.nama_usaha) return error('Nama usaha wajib diisi.');
-        const row = await supabase.insert('umkm', { nama_usaha: body.nama_usaha, pemilik: body.pemilik, kategori: body.kategori, deskripsi: body.deskripsi, no_hp: body.no_hp, alamat: body.alamat });
+        const row = await supabase.insert('umkm', { nama_usaha: body.nama_usaha, pemilik: body.pemilik, kategori: body.kategori, deskripsi: body.deskripsi, no_hp: body.no_hp });
         return json({ id: row.id, message: 'UMKM berhasil ditambahkan.' });
       }
       if (id && method === 'PUT') { await supabase.update('umkm', body, { id: `eq.${id}` }); return json({ message: 'UMKM berhasil diperbarui.' }); }
@@ -219,7 +225,7 @@ export async function onRequest(context) {
 
       // Users
       if (s[0] === 'users') {
-        if (method === 'GET') { authorize(['super_admin'], user); return json(await supabase.query('users', { select: 'id,username,role,display_name,created_at', order: 'id.asc' })); }
+        if (method === 'GET') { authorize(['super_admin'], user); return json((await supabase.query('users', { order: 'id.asc' })).map(u => ({ id: u.id, username: u.username, role: u.role, display_name: u.display_name || '', created_at: u.created_at }))); }
         if (s[2] === 'role' && method === 'PUT') {
           authorize(['super_admin'], user);
           if (!['anggota', 'pengurus', 'ketua', 'bendahara', 'super_admin'].includes(body.role)) return error('Role tidak valid.');
@@ -337,7 +343,7 @@ export async function onRequest(context) {
         if (!aid && method === 'POST') {
           authorize(['bendahara', 'super_admin'], user);
           if (!body.judul || !body.rencana) return error('Lengkapi field wajib.');
-          const row = await supabase.insert('anggaran', { kegiatan: body.kegiatan || null, judul: body.judul, rencana: parseFloat(body.rencana), periode_bulan: body.periode_bulan || null, periode_tahun: body.periode_tahun || null });
+          const row = await supabase.insert('anggaran', { kegiatan_id: body.kegiatan_id ? parseInt(body.kegiatan_id) : null, judul: body.judul, rencana: parseFloat(body.rencana), periode_bulan: body.periode_bulan || null, periode_tahun: body.periode_tahun || null });
           return json({ id: row.id, message: 'Anggaran berhasil dibuat.' });
         }
         if (aid && method === 'PUT') {

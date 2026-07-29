@@ -111,7 +111,7 @@ export function authorizeCreate(user, section, subSection = '') {
   }
   if (section === 'keuangan') {
     if (subSection === 'transaksi' && ['bendahara', 'ketua'].includes(role)) return;
-    if (['anggaran', 'iuran'].includes(subSection) && role === 'bendahara') return;
+    if (['anggaran', 'iuran'].includes(subSection) && ['bendahara', 'ketua'].includes(role)) return;
   }
   throw new Error('Akses ditolak. Tidak memiliki izin untuk membuat data.');
 }

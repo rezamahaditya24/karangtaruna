@@ -211,7 +211,7 @@ async function loadKeuanganAnggaran() {
       const sisa = a.rencana - a.realisasi;
       const pct = a.rencana > 0 ? Math.min(100, Math.round(a.realisasi / a.rencana * 100)) : 0;
       const warning = pct >= 90 ? 'color:#dc3545' : pct >= 75 ? 'color:#ffc107' : 'color:#28a745';
-      const kegiatanNama = a.kegiatan_nama || a.kegiatan || '-';
+      const kegiatanNama = a.kegiatan_nama || '-';
       return `<tr>
         <td>${escapeHtml(kegiatanNama)}</td>
         <td>${escapeHtml(a.judul)}</td>
@@ -230,7 +230,7 @@ async function loadKeuanganAnggaran() {
 function openKeuanganAnggaranForm() {
   document.getElementById('keuanganAnggaranModalTitle').textContent = 'Tambah Anggaran';
   document.getElementById('keuanganAnggaranFormFields').innerHTML = `
-    <div class="form-group"><label>Kegiatan (ketik manual)</label><input type="text" name="kegiatan" placeholder="Misal: Konsumsi Acara, Dekorasi Panggung, dll"></div>
+    <div class="form-group"><label>Kegiatan (Program)</label><select name="kegiatan_id" id="anggaranKegiatanSelect"><option value="">Pilih Program</option></select></div>
     <div class="form-group"><label>Judul Anggaran</label><input type="text" name="judul" required placeholder="Misal: Konsumsi, Dekorasi, dll"></div>
     <div class="form-row">
       <div class="form-group"><label>Rencana Anggaran (Rp)</label><input type="number" name="rencana" min="1" required></div>
@@ -240,6 +240,7 @@ function openKeuanganAnggaranForm() {
       <div class="form-group"><label>Periode Tahun</label><select name="periode_tahun">${[2024,2025,2026,2027,2028].map(y => `<option value="${y}" ${y === new Date().getFullYear() ? 'selected' : ''}>${y}</option>`).join('')}</select></div>
     </div>
   `;
+  loadKegiatanOptions('keuanganAnggaranForm');
   document.getElementById('keuanganAnggaranModal').classList.add('show');
   document.getElementById('keuanganAnggaranForm').onsubmit = async (e) => {
     e.preventDefault();

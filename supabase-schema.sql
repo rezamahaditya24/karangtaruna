@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
+  role VARCHAR(50) NOT NULL DEFAULT 'anggota',
+  display_name VARCHAR(255),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -78,6 +80,65 @@ CREATE TABLE IF NOT EXISTS pendaftar (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS transaksi (
+  id SERIAL PRIMARY KEY,
+  tanggal DATE NOT NULL DEFAULT CURRENT_DATE,
+  tipe VARCHAR(50) NOT NULL,
+  kategori VARCHAR(100) NOT NULL,
+  jumlah NUMERIC(15,2) NOT NULL,
+  deskripsi TEXT,
+  kegiatan VARCHAR(255),
+  kegiatan_id INTEGER,
+  bukti_url TEXT,
+  status VARCHAR(50) DEFAULT 'draft',
+  created_by INTEGER,
+  diverifikasi_oleh INTEGER,
+  diverifikasi_at TIMESTAMPTZ,
+  dikunci_oleh INTEGER,
+  dikunci_at TIMESTAMPTZ,
+  koreksi_dari_id INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS anggaran (
+  id SERIAL PRIMARY KEY,
+  kegiatan VARCHAR(255),
+  kegiatan_id INTEGER,
+  judul VARCHAR(255) NOT NULL,
+  rencana NUMERIC(15,2) NOT NULL DEFAULT 0,
+  periode_bulan INTEGER,
+  periode_tahun INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS iuran (
+  id SERIAL PRIMARY KEY,
+  anggota_id INTEGER NOT NULL,
+  periode_bulan INTEGER NOT NULL,
+  periode_tahun INTEGER NOT NULL,
+  jumlah NUMERIC(15,2) NOT NULL,
+  status VARCHAR(50) DEFAULT 'lunas',
+  transaksi_id INTEGER,
+  lunas_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS aktivitas_log (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  aksi VARCHAR(255) NOT NULL,
+  detail TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS komentar_transaksi (
+  id SERIAL PRIMARY KEY,
+  transaksi_id INTEGER NOT NULL,
+  user_id INTEGER,
+  pesan TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Default admin user will be auto-created on app startup with:
 --   Username: Admin
 --   Password: Admin123
@@ -95,3 +156,8 @@ ALTER TABLE umkm ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pengurus ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pendaftar ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transaksi ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anggaran ENABLE ROW LEVEL SECURITY;
+ALTER TABLE iuran ENABLE ROW LEVEL SECURITY;
+ALTER TABLE aktivitas_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE komentar_transaksi ENABLE ROW LEVEL SECURITY;

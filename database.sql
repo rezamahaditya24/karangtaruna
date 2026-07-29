@@ -78,3 +78,62 @@ CREATE TABLE IF NOT EXISTS pendaftar (
   alasan_bergabung TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS transaksi (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tanggal DATE NOT NULL DEFAULT CURRENT_DATE,
+  tipe VARCHAR(50) NOT NULL,
+  kategori VARCHAR(100) NOT NULL,
+  jumlah DECIMAL(15,2) NOT NULL,
+  deskripsi TEXT,
+  kegiatan VARCHAR(255),
+  kegiatan_id INT,
+  bukti_url TEXT,
+  status VARCHAR(50) DEFAULT 'draft',
+  created_by INT,
+  diverifikasi_oleh INT,
+  diverifikasi_at TIMESTAMP NULL,
+  dikunci_oleh INT,
+  dikunci_at TIMESTAMP NULL,
+  koreksi_dari_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS anggaran (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  kegiatan VARCHAR(255),
+  kegiatan_id INT,
+  judul VARCHAR(255) NOT NULL,
+  rencana DECIMAL(15,2) NOT NULL DEFAULT 0,
+  periode_bulan INT,
+  periode_tahun INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS iuran (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  anggota_id INT NOT NULL,
+  periode_bulan INT NOT NULL,
+  periode_tahun INT NOT NULL,
+  jumlah DECIMAL(15,2) NOT NULL,
+  status VARCHAR(50) DEFAULT 'lunas',
+  transaksi_id INT,
+  lunas_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS aktivitas_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  aksi VARCHAR(255) NOT NULL,
+  detail TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS komentar_transaksi (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  transaksi_id INT NOT NULL,
+  user_id INT,
+  pesan TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

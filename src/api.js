@@ -272,7 +272,7 @@ Halaman yang tersedia: Dashboard, Berita, Galeri, Program Kerja, UMKM, Kas, Peng
 Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan menyebut Manajemen User, jelaskan bahwa hanya pengguna dengan hak penuh dapat menambah, mengubah, atau menghapus akun, serta sebutkan batasan role lain. Jangan jawab dengan pesan umum atau default, dan jawab langsung sesuai fitur yang ditanyakan. Jika pertanyaan menanyakan cara, berikan langkah praktis yang relevan.`;
 
     const promptText = `${systemPrompt}\n\nHalaman aktif: ${pageTitle}\nRole saat ini: ${body.role || 'anggota'}\n\nPertanyaan admin: ${body.message}`;
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${geminiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent?key=${geminiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -286,7 +286,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
       try { parsedError = JSON.parse(errText); } catch (e) { }
       const apiMessage = parsedError?.error?.message || errText || `Status ${res.status}`;
       if (res.status === 429) {
-        return error(`AI tidak dapat diproses saat ini karena kuota habis pada model ${modelName}. Silakan coba model lain dengan mengatur GEMINI_MODEL di .env atau cek batasan kuota.`, 429);
+        return error(`AI tidak dapat diproses saat ini karena kuota habis pada model ${geminiModel}. Silakan coba model lain dengan mengatur GEMINI_MODEL di .env atau cek batasan kuota.`, 429);
       }
       return error(`AI error: ${apiMessage}`, res.status);
     }
@@ -319,7 +319,8 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
 
   if (segments[0] === 'auth' && segments[1] === 'me' && method === 'GET') {
     try { user = await authenticate(request, env); } catch (e) { return error(e.message, 401); }
-    return json({ username: user.username, role: user.role || 'anggota', display_name: user.display_name || '' });
+    const fullUser = await supabase.get('users', { id: `eq.${user.id}` });
+    return json({ username: fullUser?.username || user.username, role: fullUser?.role || user.role || 'anggota', display_name: fullUser?.display_name || '' });
   }
 
   const id = segments.length > 1 ? segments[1] : null;
@@ -377,7 +378,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
     if (method === 'GET' && !id) return json(await supabase.query('umkm', { order: 'created_at.desc' }));
     if (method === 'POST') {
       if (!body.nama_usaha) return error('Nama usaha wajib diisi.');
-      const row = await supabase.insert('umkm', { nama_usaha: body.nama_usaha, pemilik: body.pemilik, kategori: body.kategori, deskripsi: body.deskripsi, no_hp: body.no_hp, alamat: body.alamat });
+      const row = await supabase.insert('umkm', { nama_usaha: body.nama_usaha, pemilik: body.pemilik, kategori: body.kategori, deskripsi: body.deskripsi, no_hp: body.no_hp });
       return json({ id: row.id, message: 'UMKM berhasil ditambahkan.' });
     }
     if (id && method === 'PUT') { await supabase.update('umkm', body, { id: `eq.${id}` }); return json({ message: 'UMKM berhasil diperbarui.' }); }
@@ -453,7 +454,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
 
     // Users
     if (s[0] === 'users') {
-      if (method === 'GET') { authorize(['super_admin'], user); return json(await supabase.query('users', { select: 'id,username,role,display_name,created_at', order: 'id.asc' })); }
+      if (method === 'GET') { authorize(['super_admin'], user); return json((await supabase.query('users', { order: 'id.asc' })).map(u => ({ id: u.id, username: u.username, role: u.role, display_name: u.display_name || '', created_at: u.created_at }))); }
       if (method === 'POST') {
         authorize(['super_admin'], user);
         if (!body.username || !body.password) return error('Username dan password wajib diisi.');
@@ -593,7 +594,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
       if (!aid && method === 'POST') {
         authorize(['bendahara', 'super_admin'], user);
         if (!body.judul || !body.rencana) return error('Lengkapi field wajib.');
-        const row = await supabase.insert('anggaran', { kegiatan: body.kegiatan || null, judul: body.judul, rencana: parseFloat(body.rencana), periode_bulan: body.periode_bulan || null, periode_tahun: body.periode_tahun || null });
+        const row = await supabase.insert('anggaran', { kegiatan_id: body.kegiatan_id ? parseInt(body.kegiatan_id) : null, judul: body.judul, rencana: parseFloat(body.rencana), periode_bulan: body.periode_bulan || null, periode_tahun: body.periode_tahun || null });
         return json({ id: row.id, message: 'Anggaran berhasil dibuat.' });
       }
       if (aid && method === 'PUT') {
