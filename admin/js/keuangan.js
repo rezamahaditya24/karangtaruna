@@ -529,12 +529,64 @@ async function hapusKeuanganUser(id) {
   } catch (err) { alert('Error: ' + err.message); }
 }
 
-// ====================== EXPORT LAPORAN CSV ======================
-function downloadCSV(filename, headers, rows) {
-  const csv = [headers.join(','), ...rows.map(r => r.map(c => {
-    const s = String(c == null ? '' : c);
-    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }).join(','))].join('\n');
+// ====================== EXPORT & LAPORAN SPREADSHEET LIVE ======================
+let _laporanMenu = '';
+
+function showLaporanModal(menu) {
+  _laporanMenu = menu;
+  const userToken = localStorage.getItem('token') || '';
+  const baseUrl = window.location.origin;
+  const csvUrl = `${baseUrl}/api/keuangan/laporan/csv/${menu}?token=${encodeURIComponent(userToken)}`;
+  const titles = {
+    transaksi: 'Laporan Transaksi',
+    anggaran: 'Laporan Anggaran',
+    iuran: 'Laporan Iuran',
+    log: 'Log Aktivitas',
+    users: 'Data User',
+    ringkasan: 'Ringkasan Keuangan'
+  };
+  document.getElementById('laporanModalBody').innerHTML = `
+    <p style="margin-bottom:12px"><strong>${titles[menu] || 'Laporan'}</strong></p>
+    <p style="margin-bottom:8px;color:#555">Gunakan link ini di Google Sheets dengan fungsi <code style="background:#eee;padding:2px 6px;border-radius:3px;font-size:12px">=IMPORTDATA("URL")</code> agar tabel selalu <strong>auto-update</strong>:</p>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <input type="text" id="laporanCsvUrl" value="${csvUrl}" readonly
+        style="flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#f9f9f9">
+      <button class="btn btn-sm btn-primary" onclick="salinLinkLaporan()">📋 Salin</button>
+    </div>
+    <p style="margin-bottom:4px;color:#888;font-size:13px">Atau download file CSV untuk impor manual:</p>
+  `;
+  document.getElementById('laporanDownloadBtn').onclick = () => downloadLaporanCSV(menu);
+  document.getElementById('laporanModal').style.display = 'flex';
+}
+
+function closeLaporanModal() {
+  document.getElementById('laporanModal').style.display = 'none';
+}
+
+function salinLinkLaporan() {
+  const input = document.getElementById('laporanCsvUrl');
+  if (!input) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = document.querySelector('#laporanModal .modal-footer .btn-primary');
+    if (btn) { btn.textContent = '✅ Tersalin!'; setTimeout(() => { btn.textContent = '📋 Salin Link Spreadsheet'; }, 2000); }
+  }).catch(() => {
+    alert('Link: ' + input.value);
+  });
+}
+
+function formatRupiah(n) {
+  return 'Rp ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function escCsv(v) {
+  const s = String(v == null ? '' : v);
+  return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function downloadCsvFile(filename, headers, rows) {
+  const csv = [headers.join(','), ...rows.map(r => r.map(escCsv).join(','))].join('\n');
   const bom = '\uFEFF';
   const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
@@ -544,78 +596,79 @@ function downloadCSV(filename, headers, rows) {
   URL.revokeObjectURL(a.href);
 }
 
-async function exportKeuanganTransaksi() {
+async function downloadLaporanCSV(menu) {
   try {
-    const data = await apiFetch(`${API}/keuangan/transaksi`);
-    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
-    downloadCSV('laporan-transaksi.csv',
-      ['Tanggal', 'Jam', 'Tipe', 'Kategori', 'Jumlah', 'Deskripsi', 'Status', 'Dana', 'Dibuat Oleh'],
-      data.map(t => [formatDate(t.created_at), t.jam || '', t.tipe, t.kategori, t.jumlah, (t.deskripsi||'').replace(/,/g,';'), t.status, !t.fund || t.fund === 'kas' ? 'Kas' : 'Penting', t.created_by_name || '-'])
-    );
+    if (menu === 'transaksi') {
+      const data = await apiFetch(`${API}/keuangan/transaksi`);
+      if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+      downloadCsvFile('laporan-transaksi.csv',
+        ['Tanggal', 'Jam', 'Tipe', 'Kategori', 'Jumlah', 'Deskripsi', 'Status', 'Dana', 'Bukti URL', 'Dibuat Oleh'],
+        data.map(t => [
+          formatDate(t.created_at), t.jam || '', t.tipe, t.kategori, formatRupiah(t.jumlah),
+          (t.deskripsi || '').replace(/,/g, ';'), t.status, !t.fund || t.fund === 'kas' ? 'Kas' : 'Penting',
+          (() => { try { const urls = t.bukti_urls ? JSON.parse(t.bukti_urls) : (t.bukti_url ? [t.bukti_url] : []); return urls.join('; '); } catch { return t.bukti_url || ''; } })(),
+          t.created_by_name || '-'
+        ])
+      );
+    } else if (menu === 'anggaran') {
+      const data = await apiFetch(`${API}/keuangan/anggaran`);
+      if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+      downloadCsvFile('laporan-anggaran.csv',
+        ['Kegiatan', 'Judul', 'Rencana', 'Realisasi', 'Sisa', 'Progress (%)'],
+        data.map(a => [
+          a.kegiatan_nama || '-', a.judul, formatRupiah(a.rencana), formatRupiah(a.realisasi),
+          formatRupiah(a.rencana - a.realisasi), a.rencana > 0 ? Math.round(a.realisasi / a.rencana * 100) : 0
+        ])
+      );
+    } else if (menu === 'iuran') {
+      const data = await apiFetch(`${API}/keuangan/iuran`);
+      if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+      downloadCsvFile('laporan-iuran.csv',
+        ['Anggota', 'Periode', 'Jumlah', 'Status', 'Lunas At'],
+        data.map(i => [
+          i.anggota_nama || 'Anggota #' + i.anggota_id, i.periode_bulan + '/' + i.periode_tahun,
+          formatRupiah(i.jumlah), i.status, i.lunas_at ? formatDate(i.lunas_at) : '-'
+        ])
+      );
+    } else if (menu === 'log') {
+      const data = await apiFetch(`${API}/keuangan/log`);
+      if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+      downloadCsvFile('laporan-log-aktivitas.csv',
+        ['Waktu', 'User', 'Aksi', 'Detail'],
+        data.map(l => [formatDate(l.created_at), l.user_name || '-', l.aksi, l.detail || ''])
+      );
+    } else if (menu === 'users') {
+      const data = await apiFetch(`${API}/keuangan/users`);
+      if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+      downloadCsvFile('laporan-users.csv',
+        ['ID', 'Username', 'Nama', 'Role', 'Tanggal Dibuat'],
+        data.map(u => [u.id, u.username, u.display_name || '-', u.role, formatDate(u.created_at)])
+      );
+    } else if (menu === 'ringkasan') {
+      const data = await apiFetch(`${API}/keuangan/ringkasan`);
+      downloadCsvFile('laporan-ringkasan-keuangan.csv',
+        ['Metrik', 'Nilai'],
+        [
+          ['Saldo Kas Umum', formatRupiah(data.saldo_kas)],
+          ['Saldo Dana Penting', formatRupiah(data.saldo_penting)],
+          ['Total Kas', formatRupiah(data.saldo)],
+          ['Total Transaksi', data.total],
+          ['Perlu Verifikasi', data.perluVerifikasi],
+          ['Pemasukan Kas (Bulan Ini)', formatRupiah(data.bulanIni.pemasukan_kas)],
+          ['Pengeluaran Kas (Bulan Ini)', formatRupiah(data.bulanIni.pengeluaran_kas)],
+          ['Pemasukan Penting (Bulan Ini)', formatRupiah(data.bulanIni.pemasukan_penting)],
+          ['Pengeluaran Penting (Bulan Ini)', formatRupiah(data.bulanIni.pengeluaran_penting)]
+        ]
+      );
+    }
   } catch (err) { alert('Error: ' + err.message); }
 }
 
-async function exportKeuanganAnggaran() {
-  try {
-    const data = await apiFetch(`${API}/keuangan/anggaran`);
-    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
-    downloadCSV('laporan-anggaran.csv',
-      ['Kegiatan', 'Judul', 'Rencana', 'Realisasi', 'Sisa', 'Progress (%)'],
-      data.map(a => [a.kegiatan_nama || '-', a.judul, a.rencana, a.realisasi, a.rencana - a.realisasi, a.rencana > 0 ? Math.round(a.realisasi / a.rencana * 100) : 0])
-    );
-  } catch (err) { alert('Error: ' + err.message); }
-}
-
-async function exportKeuanganIuran() {
-  try {
-    const data = await apiFetch(`${API}/keuangan/iuran`);
-    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
-    downloadCSV('laporan-iuran.csv',
-      ['Anggota', 'Periode', 'Jumlah', 'Status', 'Lunas At'],
-      data.map(i => [i.anggota_nama || 'Anggota #' + i.anggota_id, i.periode_bulan + '/' + i.periode_tahun, i.jumlah, i.status, i.lunas_at ? formatDate(i.lunas_at) : '-'])
-    );
-  } catch (err) { alert('Error: ' + err.message); }
-}
-
-async function exportKeuanganLog() {
-  try {
-    const data = await apiFetch(`${API}/keuangan/log`);
-    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
-    downloadCSV('laporan-log-aktivitas.csv',
-      ['Waktu', 'User', 'Aksi', 'Detail'],
-      data.map(l => [formatDate(l.created_at), l.user_name || '-', l.aksi, l.detail || ''])
-    );
-  } catch (err) { alert('Error: ' + err.message); }
-}
-
-async function exportKeuanganUsers() {
-  try {
-    const data = await apiFetch(`${API}/keuangan/users`);
-    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
-    downloadCSV('laporan-users.csv',
-      ['ID', 'Username', 'Nama', 'Role', 'Tanggal Dibuat'],
-      data.map(u => [u.id, u.username, u.display_name || '-', u.role, formatDate(u.created_at)])
-    );
-  } catch (err) { alert('Error: ' + err.message); }
-}
-
-async function exportKeuanganDashboard() {
-  try {
-    const data = await apiFetch(`${API}/keuangan/ringkasan`);
-    downloadCSV('laporan-ringkasan-keuangan.csv',
-      ['Metrik', 'Nilai'],
-      [
-        ['Saldo Kas Umum', data.saldo_kas],
-        ['Saldo Dana Penting', data.saldo_penting],
-        ['Total Kas', data.saldo],
-        ['Total Transaksi', data.total],
-        ['Perlu Verifikasi', data.perluVerifikasi],
-        ['Pemasukan Kas (Bulan Ini)', data.bulanIni.pemasukan_kas],
-        ['Pengeluaran Kas (Bulan Ini)', data.bulanIni.pengeluaran_kas],
-        ['Pemasukan Penting (Bulan Ini)', data.bulanIni.pemasukan_penting],
-        ['Pengeluaran Penting (Bulan Ini)', data.bulanIni.pengeluaran_penting]
-      ]
-    );
-  } catch (err) { alert('Error: ' + err.message); }
-}
+// Redirect existing exports to modal
+async function exportKeuanganTransaksi() { showLaporanModal('transaksi'); }
+async function exportKeuanganAnggaran()  { showLaporanModal('anggaran'); }
+async function exportKeuanganIuran()     { showLaporanModal('iuran'); }
+async function exportKeuanganLog()       { showLaporanModal('log'); }
+async function exportKeuanganUsers()     { showLaporanModal('users'); }
+async function exportKeuanganDashboard() { showLaporanModal('ringkasan'); }
 

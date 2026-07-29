@@ -1,5 +1,5 @@
 import { createClient } from '../../config/supabase-rest.js';
-import { authenticate, signJWT, verifyPassword, authorize, migratePassword } from '../../config/auth-cf.js';
+import { authenticate, signJWT, verifyPassword, authorize, migratePassword, verifyJWT, extractToken } from '../../config/auth-cf.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -273,7 +273,7 @@ export async function onRequest(context) {
           if (files && files.length > 0) {
             for (const f of files) { const url = await uploadToSupabase(f, 'bukti', env); if (url) buktiUrls.push(url); }
           }
-          const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', fund: body.fund, created_by: user.id, jam: new Date().toTimeString().slice(0, 5) });
+          const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', fund: body.fund, created_by: user.id, jam: new Date(Date.now() + 7 * 3600000).toISOString().slice(11, 16) });
           return json({ id: row.id, message: 'Transaksi berhasil ditambahkan (status: draft).' });
         }
 
@@ -332,7 +332,7 @@ export async function onRequest(context) {
           if (files && files.length > 0) {
             for (const f of files) { const url = await uploadToSupabase(f, 'bukti', env); if (url) buktiUrls.push(url); }
           }
-          const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', fund: body.fund, created_by: user.id, jam: new Date().toTimeString().slice(0, 5), koreksi_dari_id: parseInt(tid) });
+          const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', fund: body.fund, created_by: user.id, jam: new Date(Date.now() + 7 * 3600000).toISOString().slice(11, 16), koreksi_dari_id: parseInt(tid) });
           return json({ id: row.id, message: 'Koreksi berhasil. Menunggu verifikasi.' });
         }
 
@@ -409,6 +409,105 @@ export async function onRequest(context) {
           await supabase.remove('iuran', { id: `eq.${s[1]}` });
           return json({ message: 'Iuran berhasil dihapus.' });
         }
+      }
+
+      // Laporan CSV (live Google Sheets via IMPORTDATA)
+      if (s[0] === 'laporan' && s[1] === 'csv') {
+        let csvUser = user;
+        if (!csvUser) {
+          const queryToken = url.searchParams.get('token');
+          if (queryToken) {
+            try { csvUser = await verifyJWT(queryToken, env.JWT_SECRET); } catch {}
+          }
+        }
+        if (!csvUser) return error('Akses ditolak.', 401);
+        const menu = s.slice(2).join('/');
+        const escCsv = v => { const s = String(v == null ? '' : v); return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+        const fmtRp = n => 'Rp ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        const fmtDate = d => d ? new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+
+        if (menu === 'transaksi') {
+          authorize(['super_admin', 'bendahara', 'ketua'], csvUser);
+          const data = await supabase.query('transaksi', { order: 'created_at.desc' });
+          const enriched = await Promise.all(data.map(async r => ({ ...r, created_by_name: r.created_by ? (await supabase.get('users', { id: `eq.${r.created_by}` }))?.username || null : null })));
+          const csv = ['Tanggal,Jam,Tipe,Kategori,Jumlah,Deskripsi,Status,Dana,Bukti URL,Dibuat Oleh',
+            ...enriched.map(r => [
+              fmtDate(r.created_at), r.jam || '', r.tipe, escCsv(r.kategori), fmtRp(r.jumlah),
+              escCsv(r.deskripsi || ''), r.status, !r.fund || r.fund === 'kas' ? 'Kas' : 'Penting',
+              escCsv(r.bukti_urls ? JSON.parse(r.bukti_urls).join('; ') : (r.bukti_url || '')),
+              escCsv(r.created_by_name || '-')
+            ].join(','))
+          ].join('\n');
+          return new Response('\uFEFF' + csv, { headers: { 'Content-Type': 'text/csv;charset=utf-8', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (menu === 'anggaran') {
+          authorize(['super_admin', 'bendahara', 'ketua'], csvUser);
+          const rows = await supabase.query('anggaran', { order: 'created_at.desc' });
+          const txAll = await supabase.query('transaksi');
+          const enriched = await Promise.all(rows.map(async a => {
+            const nm = a.kegiatan_id ? (await supabase.get('program', { id: `eq.${a.kegiatan_id}` }))?.judul || null : null;
+            const real = txAll.filter(t => (t.kegiatan === a.kegiatan || t.kegiatan_id === a.kegiatan_id) && t.status === 'terkunci').reduce((s, t) => s + parseFloat(t.jumlah), 0);
+            return { ...a, kegiatan_nama: nm, realisasi: real };
+          }));
+          const csv = ['Kegiatan,Judul,Rencana,Realisasi,Sisa,Progress (%)',
+            ...enriched.map(a => [
+              escCsv(a.kegiatan_nama || '-'), escCsv(a.judul), fmtRp(a.rencana), fmtRp(a.realisasi),
+              fmtRp(a.rencana - a.realisasi), a.rencana > 0 ? Math.round(a.realisasi / a.rencana * 100) : 0
+            ].join(','))
+          ].join('\n');
+          return new Response('\uFEFF' + csv, { headers: { 'Content-Type': 'text/csv;charset=utf-8', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (menu === 'iuran') {
+          authorize(['super_admin', 'bendahara', 'ketua'], csvUser);
+          const rows = await supabase.query('iuran', { order: 'periode_tahun.desc,periode_bulan.desc' });
+          const enriched = await Promise.all(rows.map(async i => ({ ...i, anggota_nama: i.anggota_id ? (await supabase.get('pendaftar', { id: `eq.${i.anggota_id}` }))?.nama_lengkap || null : null })));
+          const csv = ['Anggota,Periode,Jumlah,Status,Lunas At',
+            ...enriched.map(i => [
+              escCsv(i.anggota_nama || 'Anggota #' + i.anggota_id), i.periode_bulan + '/' + i.periode_tahun,
+              fmtRp(i.jumlah), i.status, i.lunas_at ? fmtDate(i.lunas_at) : '-'
+            ].join(','))
+          ].join('\n');
+          return new Response('\uFEFF' + csv, { headers: { 'Content-Type': 'text/csv;charset=utf-8', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (menu === 'log') {
+          authorize(['super_admin'], csvUser);
+          const rows = await supabase.query('aktivitas_log', { order: 'created_at.desc', limit: '100' });
+          const enriched = await Promise.all(rows.map(async r => ({ ...r, user_name: r.user_id ? (await supabase.get('users', { id: `eq.${r.user_id}` }))?.username || '-' : '-' })));
+          const csv = ['Waktu,User,Aksi,Detail',
+            ...enriched.map(l => [fmtDate(l.created_at), escCsv(l.user_name), escCsv(l.aksi), escCsv(l.detail || '')].join(','))
+          ].join('\n');
+          return new Response('\uFEFF' + csv, { headers: { 'Content-Type': 'text/csv;charset=utf-8', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (menu === 'users') {
+          authorize(['super_admin'], csvUser);
+          const data = await supabase.query('users', { order: 'id.asc' });
+          const csv = ['ID,Username,Nama,Role,Tanggal Dibuat',
+            ...data.map(u => [u.id, escCsv(u.username), escCsv(u.display_name || '-'), u.role, fmtDate(u.created_at)].join(','))
+          ].join('\n');
+          return new Response('\uFEFF' + csv, { headers: { 'Content-Type': 'text/csv;charset=utf-8', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (menu === 'ringkasan') {
+          authorize(['super_admin', 'bendahara', 'ketua'], csvUser);
+          const all = await supabase.query('transaksi');
+          const hitung = arr => arr.filter(t => t.status !== 'ditolak').reduce((s, t) => s + (t.tipe === 'pemasukan' ? parseFloat(t.jumlah) : -parseFloat(t.jumlah)), 0);
+          const saldo_kas = hitung(all.filter(t => !t.fund || t.fund === 'kas'));
+          const saldo_penting = hitung(all.filter(t => t.fund === 'penting'));
+          const now = new Date();
+          const bulanIni = all.filter(t => { const d = new Date(t.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && t.status !== 'ditolak'; });
+          const csv = ['Metrik,Nilai',
+            ['Saldo Kas Umum', fmtRp(saldo_kas)],
+            ['Saldo Dana Penting', fmtRp(saldo_penting)],
+            ['Total Kas', fmtRp(hitung(all))],
+            ['Total Transaksi', all.length],
+            ['Perlu Verifikasi', all.filter(t => t.status === 'draft').length],
+            ['Pemasukan Kas (Bulan Ini)', fmtRp(bulanIni.filter(t => t.tipe === 'pemasukan' && (!t.fund || t.fund === 'kas')).reduce((s, t) => s + parseFloat(t.jumlah), 0))],
+            ['Pengeluaran Kas (Bulan Ini)', fmtRp(bulanIni.filter(t => t.tipe === 'pengeluaran' && (!t.fund || t.fund === 'kas')).reduce((s, t) => s + parseFloat(t.jumlah), 0))],
+            ['Pemasukan Penting (Bulan Ini)', fmtRp(bulanIni.filter(t => t.tipe === 'pemasukan' && t.fund === 'penting').reduce((s, t) => s + parseFloat(t.jumlah), 0))],
+            ['Pengeluaran Penting (Bulan Ini)', fmtRp(bulanIni.filter(t => t.tipe === 'pengeluaran' && t.fund === 'penting').reduce((s, t) => s + parseFloat(t.jumlah), 0))]
+          ].map(r => r.join(',')).join('\n');
+          return new Response('\uFEFF' + csv, { headers: { 'Content-Type': 'text/csv;charset=utf-8', 'Access-Control-Allow-Origin': '*' } });
+        }
+        return error('Menu CSV tidak ditemukan.', 404);
       }
 
       // Laporan Publik

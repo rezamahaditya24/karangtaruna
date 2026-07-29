@@ -337,6 +337,19 @@
     </div>
   </div>
 
+  <!-- Modal Laporan Spreadsheet -->
+  <div id="laporanModal" class="modal">
+    <div class="modal-content" style="max-width:550px">
+      <h3>📤 Laporan Spreadsheet</h3>
+      <div id="laporanModalBody" style="margin:15px 0"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="salinLinkLaporan()">📋 Salin Link Spreadsheet</button>
+        <button type="button" class="btn btn-success" id="laporanDownloadBtn">📥 Download CSV</button>
+        <button type="button" class="btn btn-danger" onclick="closeLaporanModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI Agent Chat -->
   <div id="aiChatBtn" class="ai-chat-btn" onclick="toggleAIChat()">
     <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.88.53 3.64 1.46 5.12L2 22l5.12-1.46A9.95 9.95 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
