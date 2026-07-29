@@ -93,8 +93,9 @@ export async function onRequest(context) {
     const protectedTables = ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus', 'pendaftar'];
     const isProtected = protectedTables.includes(segments[0]);
     const isKeuangan = ['keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'].includes(segments[0]);
+    const isCsvRoute = segments[0] === 'keuangan' && segments[1] === 'laporan' && segments[2] === 'csv';
     let user = null;
-    if (isProtected || isKeuangan) {
+    if ((isProtected || isKeuangan) && !isCsvRoute) {
       try { user = await authenticate(request, env); }
       catch (e) { return error(e.message, 401); }
     }
@@ -381,7 +382,7 @@ export async function onRequest(context) {
           return json({ message: 'Anggaran diperbarui.' });
         }
         if (aid && method === 'DELETE') {
-          authorize(['super_admin'], user);
+          authorize(['super_admin', 'ketua'], user);
           await supabase.remove('anggaran', { id: `eq.${aid}` });
           return json({ message: 'Anggaran berhasil dihapus.' });
         }

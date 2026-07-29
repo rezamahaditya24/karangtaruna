@@ -93,7 +93,8 @@ export async function handleAPI(request, env) {
   const isPublicRegister = segments[0] === 'pendaftar' && method === 'POST';
   const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
   const isAuthRoute = segments[0] === 'auth';
-  if (!isAuthRoute && !isPublicGet && !isPublicRegister) {
+  const isCsvRoute = segments[0] === 'keuangan' && segments[1] === 'laporan' && segments[2] === 'csv';
+  if (!isAuthRoute && !isPublicGet && !isPublicRegister && !isCsvRoute) {
     try { user = await authenticate(request, env); }
     catch (e) { return error(e.message, 401); }
   }
@@ -632,7 +633,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         return json({ message: 'Anggaran diperbarui.' });
       }
       if (aid && method === 'DELETE') {
-        authorize(['super_admin'], user);
+        authorize(['super_admin', 'ketua'], user);
         await supabase.remove('anggaran', { id: `eq.${aid}` });
         return json({ message: 'Anggaran berhasil dihapus.' });
       }

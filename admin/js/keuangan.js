@@ -100,11 +100,9 @@ function openKeuanganForm() {
   document.getElementById('keuanganModalTitle').textContent = 'Tambah Transaksi';
   document.getElementById('keuanganFormFields').innerHTML = `
     <div class="form-row">
-      <div class="form-group"><label>Tipe</label><select name="tipe" required><option value="pemasukan">Pemasukan</option><option value="pengeluaran">Pengeluaran</option></select></div>
-      <div class="form-group"><label>Kategori</label><select name="kategori" required>
+      <div class="form-group"><label>Tipe</label><select name="tipe" id="transaksiTipe" required><option value="pemasukan">Pemasukan</option><option value="pengeluaran">Pengeluaran</option></select></div>
+      <div class="form-group"><label>Kategori</label><select name="kategori" id="transaksiKategori" required>
         <option value="">Pilih Kategori</option>
-        <optgroup label="Pemasukan"><option>Iuran Anggota</option><option>Donasi</option><option>Sponsor</option><option>Hasil Usaha</option><option>Lain-lain</option></optgroup>
-        <optgroup label="Pengeluaran"><option>Operasional</option><option>Konsumsi</option><option>Acara</option><option>ATK</option><option>Transportasi</option><option>Lain-lain</option></optgroup>
       </select></div>
     </div>
     <div class="form-row">
@@ -117,6 +115,17 @@ function openKeuanganForm() {
       <div id="buktiUploadContainer"><div style="display:flex;gap:8px;margin-bottom:6px"><input type="file" name="bukti" accept="image/*" style="flex:1"><button type="button" class="btn btn-sm btn-success" onclick="tambahInputBukti()">+</button></div></div>
     </div>
   `;
+  // Load anggaran for dynamic kategori on pengeluaran
+  (async () => {
+    try {
+      const anggaran = await apiFetch(`${API}/keuangan/anggaran`);
+      window._anggaranList = (anggaran || []).filter(a => (a.rencana - a.realisasi) > 0);
+    } catch {}
+    updateKategoriOptions('pemasukan');
+  })();
+  document.getElementById('transaksiTipe').onchange = function() {
+    updateKategoriOptions(this.value);
+  };
   document.getElementById('keuanganModal').classList.add('show');
   document.getElementById('keuanganForm').onsubmit = async (e) => {
     e.preventDefault();
@@ -127,6 +136,33 @@ function openKeuanganForm() {
       loadKeuanganTransaksi();
     } catch (err) { alert('Error: ' + err.message); }
   };
+}
+
+function updateKategoriOptions(tipe) {
+  const sel = document.getElementById('transaksiKategori');
+  if (!sel) return;
+  if (tipe === 'pengeluaran') {
+    const list = window._anggaranList || [];
+    sel.innerHTML = `<option value="">Pilih Anggaran</option>${list.map(a => `<option value="${escapeHtml(a.judul)}">${escapeHtml(a.judul)} (sisa: Rp ${formatNumber(a.rencana - a.realisasi)})</option>`).join('')}`;
+  } else {
+    sel.innerHTML = `<option value="">Pilih Kategori</option>
+      <optgroup label="Pemasukan"><option>Iuran Anggota</option><option>Donasi</option><option>Sponsor</option><option>Hasil Usaha</option><option>Lain-lain</option></optgroup>`;
+  }
+}
+
+function updateKoreksiKategori(tipe, currentValue) {
+  const sel = document.getElementById('koreksiKategori');
+  if (!sel) return;
+  if (tipe === 'pengeluaran') {
+    const list = window._anggaranList || [];
+    sel.innerHTML = `<option value="">Pilih Anggaran</option>${list.map(a => `<option value="${escapeHtml(a.judul)}" ${a.judul === currentValue ? 'selected' : ''}>${escapeHtml(a.judul)} (sisa: Rp ${formatNumber(a.rencana - a.realisasi)})</option>`).join('')}`;
+    if (!list.find(a => a.judul === currentValue) && currentValue) {
+      sel.innerHTML += `<option value="${escapeHtml(currentValue)}" selected>${escapeHtml(currentValue)} (anggaran sudah habis/dihapus)</option>`;
+    }
+  } else {
+    const opts = ['Iuran Anggota','Donasi','Sponsor','Hasil Usaha','Lain-lain'];
+    sel.innerHTML = `<option value="">Pilih Kategori</option>${opts.map(o => `<option value="${o}" ${o === currentValue ? 'selected' : ''}>${o}</option>`).join('')}`;
+  }
 }
 
 function closeKeuanganForm() {
@@ -203,8 +239,8 @@ async function koreksiKeuanganTransaksi(id) {
     document.getElementById('keuanganFormFields').innerHTML = `
       <p style="color:#856404;background:#fff3cd;padding:10px;border-radius:6px;margin-bottom:15px">Koreksi akan membuat entri baru. Data asli tetap tersimpan.</p>
       <div class="form-row">
-        <div class="form-group"><label>Tipe</label><select name="tipe"><option value="pemasukan" ${t.tipe === 'pemasukan' ? 'selected' : ''}>Pemasukan</option><option value="pengeluaran" ${t.tipe === 'pengeluaran' ? 'selected' : ''}>Pengeluaran</option></select></div>
-        <div class="form-group"><label>Kategori</label><input type="text" name="kategori" value="${escapeHtml(t.kategori)}" required></div>
+        <div class="form-group"><label>Tipe</label><select name="tipe" id="koreksiTipe"><option value="pemasukan" ${t.tipe === 'pemasukan' ? 'selected' : ''}>Pemasukan</option><option value="pengeluaran" ${t.tipe === 'pengeluaran' ? 'selected' : ''}>Pengeluaran</option></select></div>
+        <div class="form-group"><label>Kategori</label><select name="kategori" id="koreksiKategori" required></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" value="${t.jumlah}" min="1" required></div>
@@ -216,6 +252,17 @@ async function koreksiKeuanganTransaksi(id) {
         <div id="buktiUploadContainer"><div style="display:flex;gap:8px;margin-bottom:6px"><input type="file" name="bukti" accept="image/*" style="flex:1"><button type="button" class="btn btn-sm btn-success" onclick="tambahInputBukti()">+</button></div></div>
       </div>
     `;
+    // Load anggaran for dynamic kategori
+    (async () => {
+      try {
+        const anggaran = await apiFetch(`${API}/keuangan/anggaran`);
+        window._anggaranList = (anggaran || []).filter(a => (a.rencana - a.realisasi) > 0);
+      } catch {}
+      updateKoreksiKategori(t.tipe, t.kategori);
+    })();
+    document.getElementById('koreksiTipe').onchange = function() {
+      updateKoreksiKategori(this.value, t.tipe === this.value ? t.kategori : '');
+    };
     document.getElementById('keuanganModal').classList.add('show');
     document.getElementById('keuanganForm').onsubmit = async (e) => {
       e.preventDefault();
@@ -250,7 +297,7 @@ async function loadKeuanganAnggaran() {
         <td>Rp ${formatNumber(a.realisasi)}</td>
         <td style="${sisa < 0 ? 'color:#dc3545;font-weight:bold' : 'color:#28a745'}">${sisa < 0 ? 'Over Rp ' + formatNumber(Math.abs(sisa)) : 'Rp ' + formatNumber(sisa)}</td>
         <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct >= 90 ? '#dc3545' : pct >= 75 ? '#ffc107' : '#28a745'};border-radius:4px;transition:width 0.5s"></div></div><span style="${warning};font-size:12px;font-weight:bold">${pct}%</span></div></td>
-        <td><button class="btn btn-sm btn-warning" onclick="editKeuanganAnggaran(${a.id}, ${a.rencana})">Edit</button>${role === 'super_admin' ? ` <button class="btn btn-sm btn-danger" onclick="hapusKeuanganAnggaran(${a.id})">Hapus</button>` : ''}</td>
+        <td><button class="btn btn-sm btn-warning" onclick="editKeuanganAnggaran(${a.id}, ${a.rencana})">Edit</button>${['super_admin', 'ketua'].includes(role) ? ` <button class="btn btn-sm btn-danger" onclick="hapusKeuanganAnggaran(${a.id})">Hapus</button>` : ''}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
   } catch (err) {
