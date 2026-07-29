@@ -79,12 +79,13 @@ export async function handleAPI(request, env) {
   const supabase = createClient(env);
 
   await loadLocalEnv();
-  let body = {}, file = null;
-  if (method === 'POST' || method === 'PUT') {
-    const parsed = await parseBody(request);
-    body = parsed.body;
-    file = parsed.file;
-  }
+    let body = {}, file = null, files = [];
+    if (method === 'POST' || method === 'PUT') {
+      const parsed = await parseBody(request);
+      body = parsed.body;
+      file = parsed.file;
+      files = parsed.files || [];
+    }
 
   const publicTables = ['berita', 'galeri', 'program', 'umkm', 'kas', 'pengurus'];
   const adminTables = ['pendaftar', 'keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'];

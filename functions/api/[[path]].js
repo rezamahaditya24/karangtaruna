@@ -63,11 +63,12 @@ export async function onRequest(context) {
 
   try {
     // Parse body early for POST/PUT
-    let body = {}, file = null;
+    let body = {}, file = null, files = [];
     if (method === 'POST' || method === 'PUT') {
       const parsed = await parseBody(request);
       body = parsed.body;
       file = parsed.file;
+      files = parsed.files || [];
     }
 
     // ===================== AUTH =====================
