@@ -289,7 +289,6 @@ export async function onRequest(context) {
           const tx = await supabase.get('transaksi', { id: `eq.${tid}` });
           if (!tx) return error('Transaksi tidak ditemukan.', 404);
           if (tx.status !== 'draft') return error('Status transaksi saat ini bukan draft.');
-          if (tx.tipe === 'pengeluaran' && parseFloat(tx.jumlah) > 500000) return error('Pengeluaran > Rp500.000 butuh 2 verifikatur.');
           await supabase.update('transaksi', { status: 'diverifikasi', diverifikasi_oleh: user.id, diverifikasi_at: new Date().toISOString() }, { id: `eq.${tid}` });
           return json({ message: 'Transaksi diverifikasi.' });
         }
@@ -298,11 +297,8 @@ export async function onRequest(context) {
           authorize(['pengurus', 'bendahara', 'super_admin'], user);
           const tx = await supabase.get('transaksi', { id: `eq.${tid}` });
           if (!tx) return error('Transaksi tidak ditemukan.', 404);
-          if (tx.status !== 'diverifikasi' && !(tx.status === 'draft' && tx.tipe === 'pengeluaran' && parseFloat(tx.jumlah) > 500000)) return error('Transaksi harus diverifikasi dulu.');
-          await supabase.update('transaksi', { diverifikasi_oleh: user.id, diverifikasi_at: new Date().toISOString() }, { id: `eq.${tid}` });
-          const updated = await supabase.get('transaksi', { id: `eq.${tid}` });
-          if (updated.tipe === 'pengeluaran' && parseFloat(updated.jumlah) > 500000 && !updated.diverifikasi_oleh) return json({ message: 'Verifikasi pertama. Butuh 1 lagi.' });
-          await supabase.update('transaksi', { status: 'diverifikasi' }, { id: `eq.${tid}` });
+          if (tx.status !== 'diverifikasi') return error('Transaksi harus diverifikasi dulu.');
+          await supabase.update('transaksi', { status: 'diverifikasi', diverifikasi_oleh: user.id, diverifikasi_at: new Date().toISOString() }, { id: `eq.${tid}` });
           return json({ message: 'Transaksi disetujui.' });
         }
 
