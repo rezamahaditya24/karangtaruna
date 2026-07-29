@@ -210,10 +210,13 @@ export async function onRequest(context) {
       // Ringkasan
       if (s[0] === 'ringkasan') {
         const all = await supabase.query('transaksi');
-        const saldo = all.filter(t => t.status !== 'ditolak').reduce((s, t) => s + (t.tipe === 'pemasukan' ? parseFloat(t.jumlah) : -parseFloat(t.jumlah)), 0);
+        const hitung = arr => arr.filter(t => t.status !== 'ditolak').reduce((s, t) => s + (t.tipe === 'pemasukan' ? parseFloat(t.jumlah) : -parseFloat(t.jumlah)), 0);
+        const saldo = hitung(all);
+        const saldo_kas = hitung(all.filter(t => !t.fund || t.fund === 'kas'));
+        const saldo_penting = hitung(all.filter(t => t.fund === 'penting'));
         const now = new Date();
         const bulanIni = all.filter(t => { const d = new Date(t.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && t.status !== 'ditolak'; });
-        return json({ saldo, total: all.length, perluVerifikasi: all.filter(t => t.status === 'draft').length, bulanIni: { pemasukan: bulanIni.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), pengeluaran: bulanIni.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0) } });
+        return json({ saldo, saldo_kas, saldo_penting, total: all.length, perluVerifikasi: all.filter(t => t.status === 'draft').length, bulanIni: { pemasukan: bulanIni.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), pengeluaran: bulanIni.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0) } });
       }
 
       // Log
@@ -262,11 +265,12 @@ export async function onRequest(context) {
           if (!body.tipe || !body.kategori || !body.jumlah || !body.deskripsi) return error('Lengkapi semua field wajib.');
           const nominal = parseFloat(body.jumlah);
           if (isNaN(nominal) || nominal <= 0) return error('Jumlah harus angka positif.');
+          if (!['kas', 'penting'].includes(body.fund)) body.fund = 'kas';
           let buktiUrls = [];
           if (files && files.length > 0) {
             for (const f of files) { const url = await uploadToSupabase(f, 'bukti', env); if (url) buktiUrls.push(url); }
           }
-          const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5) });
+          const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', fund: body.fund, created_by: user.id, jam: new Date().toTimeString().slice(0, 5) });
           return json({ id: row.id, message: 'Transaksi berhasil ditambahkan (status: draft).' });
         }
 
@@ -320,11 +324,12 @@ export async function onRequest(context) {
           if (!body.tipe || !body.kategori || !body.jumlah || !body.deskripsi) return error('Lengkapi semua field wajib.');
           const nominal = parseFloat(body.jumlah);
           if (isNaN(nominal) || nominal <= 0) return error('Jumlah harus angka positif.');
+          if (!['kas', 'penting'].includes(body.fund)) body.fund = tx.fund || 'kas';
           let buktiUrls = tx.bukti_urls ? JSON.parse(tx.bukti_urls) : (tx.bukti_url ? [tx.bukti_url] : []);
           if (files && files.length > 0) {
             for (const f of files) { const url = await uploadToSupabase(f, 'bukti', env); if (url) buktiUrls.push(url); }
           }
-          const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5), koreksi_dari_id: parseInt(tid) });
+          const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', fund: body.fund, created_by: user.id, jam: new Date().toTimeString().slice(0, 5), koreksi_dari_id: parseInt(tid) });
           return json({ id: row.id, message: 'Koreksi berhasil. Menunggu verifikasi.' });
         }
 
@@ -406,7 +411,8 @@ export async function onRequest(context) {
       // Laporan Publik
       if (sub === 'laporan/publik') {
         const all = await supabase.query('transaksi', { status: `eq.terkunci`, order: 'created_at.desc', limit: '50' });
-        return json({ saldo: all.reduce((s, t) => s + (t.tipe === 'pemasukan' ? parseFloat(t.jumlah) : -parseFloat(t.jumlah)), 0), transaksi: all, ringkasan: { total_pemasukan: all.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), total_pengeluaran: all.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0) } });
+        const hitung = arr => arr.reduce((s, t) => s + (t.tipe === 'pemasukan' ? parseFloat(t.jumlah) : -parseFloat(t.jumlah)), 0);
+        return json({ saldo: hitung(all), saldo_kas: hitung(all.filter(t => !t.fund || t.fund === 'kas')), saldo_penting: hitung(all.filter(t => t.fund === 'penting')), transaksi: all, ringkasan: { total_pemasukan: all.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), total_pengeluaran: all.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0) } });
       }
     }
 

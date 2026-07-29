@@ -3,10 +3,12 @@ async function loadKeuanganDashboard() {
   try {
     const data = await apiFetch(`${API}/keuangan/ringkasan`);
     document.getElementById('keuanganSummary').innerHTML = `
-      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" style="color:#28a745">Rp ${formatNumber(data.saldo)}</div><div class="stat-label">Saldo Kas</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" style="color:#28a745">Rp ${formatNumber(data.saldo_kas)}</div><div class="stat-label">Saldo Kas Umum</div></div>
+      <div class="stat-card"><div class="stat-icon">🔒</div><div class="stat-number" style="color:#e67e22">Rp ${formatNumber(data.saldo_penting)}</div><div class="stat-label">Saldo Dana Penting</div></div>
+      <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-number" style="color:#6c5ce7">Rp ${formatNumber(data.saldo)}</div><div class="stat-label">Total Kas</div></div>
       <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-number" style="color:#28a745">Rp ${formatNumber(data.bulanIni.pemasukan)}</div><div class="stat-label">Pemasukan Bulan Ini</div></div>
       <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" style="color:#dc3545">Rp ${formatNumber(data.bulanIni.pengeluaran)}</div><div class="stat-label">Pengeluaran Bulan Ini</div></div>
-      <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-number">${data.total}</div><div class="stat-label">Total Transaksi</div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-number">${data.total}</div><div class="stat-label">Total Transaksi</div></div>
       <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-number" style="color:#ffc107">${data.perluVerifikasi}</div><div class="stat-label">Perlu Verifikasi</div></div>
     `;
     const chartEl = document.getElementById('keuanganChart');
@@ -56,7 +58,7 @@ async function loadKeuanganTransaksi() {
     const data = await apiFetch(url);
     if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr>
-      <th>Tgl/Jam</th><th>Tipe</th><th>Kategori</th><th>Deskripsi</th><th>Jumlah</th><th>Status</th><th>Dibuat Oleh</th><th>Aksi</th>
+      <th>Tgl/Jam</th><th>Tipe</th><th>Kategori</th><th>Deskripsi</th><th>Jumlah</th><th>Status</th><th>Dana</th><th>Dibuat Oleh</th><th>Aksi</th>
     </tr></thead><tbody>${data.map(t => `<tr>
       <td>${formatDate(t.created_at)}<br><small style="color:#999">${t.jam || formatDateTime(t.created_at).split(' ').pop()}</small></td>
       <td><span class="badge ${t.tipe === 'pemasukan' ? 'badge-success' : 'badge-danger'}">${t.tipe}</span></td>
@@ -64,6 +66,7 @@ async function loadKeuanganTransaksi() {
       <td>${escapeHtml(t.deskripsi.substring(0, 50))}${t.deskripsi.length > 50 ? '...' : ''}</td>
       <td style="color:${t.tipe === 'pemasukan' ? '#28a745' : '#dc3545'};font-weight:bold">Rp ${formatNumber(t.jumlah)}</td>
       <td><span class="badge ${t.status === 'terkunci' ? 'badge-success' : t.status === 'diverifikasi' ? 'badge-primary' : t.status === 'ditolak' ? 'badge-danger' : 'badge-warning'}">${t.status}</span></td>
+      <td><span class="badge ${(!t.fund || t.fund === 'kas') ? 'badge-secondary' : 'badge-warning'}">${(!t.fund || t.fund === 'kas') ? 'Kas' : 'Penting'}</span></td>
       <td>${escapeHtml(t.created_by_name || '-')}</td>
       <td>
         <button class="btn btn-sm btn-primary" onclick="detailKeuanganTransaksi(${t.id})">Detail${(() => { try { const urls = t.bukti_urls ? JSON.parse(t.bukti_urls) : (t.bukti_url ? [t.bukti_url] : []); return urls.length > 1 ? ` (${urls.length} img)` : urls.length === 1 ? ' 📷' : ''; } catch { return ''; } })()}</button>
@@ -90,7 +93,10 @@ function openKeuanganForm() {
         <optgroup label="Pengeluaran"><option>Operasional</option><option>Konsumsi</option><option>Acara</option><option>ATK</option><option>Transportasi</option><option>Lain-lain</option></optgroup>
       </select></div>
     </div>
-    <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" min="1" required></div>
+    <div class="form-row">
+      <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" min="1" required></div>
+      <div class="form-group"><label>Sumber Dana</label><select name="fund" required><option value="kas">Kas Umum</option><option value="penting">Dana Penting</option></select></div>
+    </div>
     <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required placeholder="Untuk apa transaksi ini? Terkait kegiatan apa?"></textarea></div>
     <div class="form-group"><label>Kegiatan (opsional, ketik manual)</label><input type="text" name="kegiatan" placeholder="Misal: Dana Lomba 17 Agustus, Pentas Seni, dll"></div>
     <div class="form-group"><label>Upload Bukti (foto struk/nota)</label>
@@ -129,6 +135,7 @@ async function detailKeuanganTransaksi(id) {
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Deskripsi</td><td>${escapeHtml(t.deskripsi)}</td></tr>
           ${t.kegiatan ? `<tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Kegiatan</td><td>${escapeHtml(t.kegiatan)}</td></tr>` : ''}
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Status</td><td><span class="badge ${t.status === 'terkunci' ? 'badge-success' : t.status === 'diverifikasi' ? 'badge-primary' : t.status === 'ditolak' ? 'badge-danger' : 'badge-warning'}">${t.status}</span></td></tr>
+          <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Dana</td><td><span class="badge ${(!t.fund || t.fund === 'kas') ? 'badge-secondary' : 'badge-warning'}">${(!t.fund || t.fund === 'kas') ? 'Kas Umum' : 'Dana Penting'}</span></td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Dibuat Oleh</td><td>${escapeHtml(t.created_by_name || '-')}</td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Diverifikasi Oleh</td><td>${escapeHtml(t.diverifikasi_oleh_name || '-')}</td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Dikunci Oleh</td><td>${escapeHtml(t.dikunci_oleh_name || '-')}</td></tr>
@@ -185,7 +192,10 @@ async function koreksiKeuanganTransaksi(id) {
         <div class="form-group"><label>Tipe</label><select name="tipe"><option value="pemasukan" ${t.tipe === 'pemasukan' ? 'selected' : ''}>Pemasukan</option><option value="pengeluaran" ${t.tipe === 'pengeluaran' ? 'selected' : ''}>Pengeluaran</option></select></div>
         <div class="form-group"><label>Kategori</label><input type="text" name="kategori" value="${escapeHtml(t.kategori)}" required></div>
       </div>
-      <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" value="${t.jumlah}" min="1" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" value="${t.jumlah}" min="1" required></div>
+        <div class="form-group"><label>Sumber Dana</label><select name="fund"><option value="kas" ${(!t.fund || t.fund === 'kas') ? 'selected' : ''}>Kas Umum</option><option value="penting" ${t.fund === 'penting' ? 'selected' : ''}>Dana Penting</option></select></div>
+      </div>
       <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required>${escapeHtml(t.deskripsi)}</textarea></div>
       <div class="form-group"><label>Kegiatan (opsional)</label><input type="text" name="kegiatan" value="${escapeHtml(t.kegiatan || '')}" placeholder="Misal: Dana Lomba 17 Agustus"></div>
       <div class="form-group"><label>Upload Bukti Baru (opsional)</label>

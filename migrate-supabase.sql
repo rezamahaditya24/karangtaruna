@@ -22,6 +22,9 @@ ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS koreksi_dari_id INTEGER;
 ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS jam VARCHAR(5);
 ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS bukti_urls TEXT;
 
--- 4. Refresh schema cache
+-- 5. Tambah kolom fund untuk pisah saldo kas vs penting
+ALTER TABLE transaksi ADD COLUMN IF NOT EXISTS fund VARCHAR(20) DEFAULT 'kas';
+
+-- 6. Refresh schema cache
 -- Setelah menjalankan ALTER TABLE, schema cache Supabase otomatis ter-refresh dalam beberapa detik.
 -- Jika masih error, tunggu 30 detik atau restart project dari dashboard.

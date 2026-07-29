@@ -422,33 +422,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function loadKas() {
     const saldoEl = document.getElementById('kasSaldo');
+    const pentingSaldoEl = document.getElementById('pentingSaldo');
     const ringkasanContainer = document.getElementById('kasRingkasan');
     const tabelContainer = document.getElementById('kasTabel');
     if (!tabelContainer) return;
     try {
-      const res = await fetch('/api/kas');
+      const res = await fetch('/api/keuangan/laporan/publik');
       const data = await res.json();
 
-      if (saldoEl) saldoEl.textContent = 'Rp ' + formatNumber(data.saldo);
+      if (saldoEl) saldoEl.textContent = 'Rp ' + formatNumber(data.saldo_kas);
+      if (pentingSaldoEl) pentingSaldoEl.textContent = 'Rp ' + formatNumber(data.saldo_penting);
       if (ringkasanContainer) {
         ringkasanContainer.innerHTML = `
-          <div class="ringkasan-item">Total Pemasukan: <strong style="color:#28a745">Rp ${formatNumber(data.ringkasan.total_pemasukan)}</strong></div>
-          <div class="ringkasan-item">Total Pengeluaran: <strong style="color:#dc3545">Rp ${formatNumber(data.ringkasan.total_pengeluaran)}</strong></div>
-          <div class="ringkasan-item">Jumlah Transaksi: <strong>${data.ringkasan.jumlah_transaksi}</strong></div>
+          <div class="card fade-in"><div class="label">Total Kas Umum</div><div class="nominal" style="color: #2e7d32;">Rp ${formatNumber(data.saldo_kas)}</div></div>
+          <div class="card fade-in"><div class="label">Total Dana Penting</div><div class="nominal" style="color: #e67e22;">Rp ${formatNumber(data.saldo_penting)}</div></div>
+          <div class="card fade-in"><div class="label">Total Pemasukan</div><div class="nominal" style="color: #2e7d32;" id="kasPemasukan">Rp ${formatNumber(data.ringkasan.total_pemasukan)}</div></div>
+          <div class="card fade-in"><div class="label">Total Pengeluaran</div><div class="nominal" style="color: var(--color-primary);">Rp ${formatNumber(data.ringkasan.total_pengeluaran)}</div></div>
+          <div class="card fade-in"><div class="label">Jumlah Transaksi</div><div class="nominal">${data.transaksi.length}</div></div>
         `;
       }
 
       if (data.transaksi.length === 0) {
-        tabelContainer.innerHTML = '<p style="text-align:center;padding:20px;color:#666">Belum ada transaksi.</p>';
+        tabelContainer.innerHTML = '<p style="text-align:center;padding:20px;color:#666">Belum ada transaksi terkunci.</p>';
         return;
       }
-      tabelContainer.innerHTML = data.transaksi.map(item => `
+      tabelContainer.innerHTML = data.transaksi.map(t => `
         <tr>
-          <td>${formatDate(item.tanggal)}</td>
-          <td>${escapeHtml(item.deskripsi || '-')}</td>
-          <td>${escapeHtml(item.kategori || '-')}</td>
-          <td class="nominal hijau">${item.pemasukan > 0 ? 'Rp ' + formatNumber(item.pemasukan) : '-'}</td>
-          <td class="nominal merah">${item.pengeluaran > 0 ? 'Rp ' + formatNumber(item.pengeluaran) : '-'}</td>
+          <td>${formatDate(t.created_at)}</td>
+          <td>${escapeHtml(t.deskripsi || '-')}</td>
+          <td>${escapeHtml(t.kategori || '-')}</td>
+          <td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:${(!t.fund || t.fund === 'kas') ? '#e8f5e9' : '#fff3e0'};color:${(!t.fund || t.fund === 'kas') ? '#2e7d32' : '#e65100'}">${(!t.fund || t.fund === 'kas') ? 'Kas' : 'Penting'}</span></td>
+          <td class="nominal hijau">${t.tipe === 'pemasukan' ? 'Rp ' + formatNumber(t.jumlah) : '-'}</td>
+          <td class="nominal merah">${t.tipe === 'pengeluaran' ? 'Rp ' + formatNumber(t.jumlah) : '-'}</td>
         </tr>
       `).join('');
     } catch (err) { tabelContainer.innerHTML = '<p style="text-align:center;padding:20px;color:#666">Gagal memuat data kas.</p>'; }

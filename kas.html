@@ -45,9 +45,14 @@
   <section>
     <div class="container">
       <div class="kas-saldo fade-in">
-        <div class="saldo-label">Saldo Kas Saat Ini</div>
+        <div class="saldo-label">Saldo Kas Umum</div>
         <div class="saldo-nominal" id="kasSaldo">Rp 0</div>
         <div class="saldo-tanggal" id="kasTanggal"></div>
+      </div>
+
+      <div class="kas-saldo fade-in" style="margin-top:16px;border-left:4px solid #e67e22">
+        <div class="saldo-label">Saldo Dana Penting</div>
+        <div class="saldo-nominal" id="pentingSaldo" style="color:#e67e22">Rp 0</div>
       </div>
 
       <div class="kas-ringkasan" style="margin-bottom: 32px;" id="kasRingkasan">
@@ -64,6 +69,7 @@
               <th>Tanggal</th>
               <th>Keterangan</th>
               <th>Kategori</th>
+              <th>Dana</th>
               <th>Pemasukan</th>
               <th>Pengeluaran</th>
             </tr>

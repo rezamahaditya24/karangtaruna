@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS transaksi (
   bukti_url TEXT,
   bukti_urls TEXT,
   status VARCHAR(50) DEFAULT 'draft',
+  fund VARCHAR(20) DEFAULT 'kas',
   created_by INT,
   diverifikasi_oleh INT,
   diverifikasi_at TIMESTAMP NULL,
