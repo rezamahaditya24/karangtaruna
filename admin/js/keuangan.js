@@ -70,6 +70,7 @@ async function loadKeuanganTransaksi() {
         ${t.status === 'draft' ? `<button class="btn btn-sm btn-success" onclick="verifikasiKeuanganTransaksi(${t.id})">Verifikasi</button> <button class="btn btn-sm btn-danger" onclick="tolakKeuanganTransaksi(${t.id})">Tolak</button>` : ''}
         ${t.status === 'diverifikasi' ? `<button class="btn btn-sm btn-primary" onclick="kunciKeuanganTransaksi(${t.id})">Kunci</button>` : ''}
         ${t.status !== 'terkunci' && t.status !== 'ditolak' ? `<button class="btn btn-sm btn-warning" onclick="koreksiKeuanganTransaksi(${t.id})">Koreksi</button>` : ''}
+        ${role === 'super_admin' && t.status !== 'terkunci' ? `<button class="btn btn-sm btn-danger" onclick="hapusKeuanganTransaksi(${t.id})">Hapus</button>` : ''}
         <button class="btn btn-sm btn-info" onclick="bukaKomentarKeuangan(${t.id})">💬</button>
       </td>
     </tr>`).join('')}</tbody></table>`;
@@ -225,7 +226,7 @@ async function loadKeuanganAnggaran() {
         <td>Rp ${formatNumber(a.realisasi)}</td>
         <td style="${sisa < 0 ? 'color:#dc3545;font-weight:bold' : 'color:#28a745'}">${sisa < 0 ? 'Over Rp ' + formatNumber(Math.abs(sisa)) : 'Rp ' + formatNumber(sisa)}</td>
         <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct >= 90 ? '#dc3545' : pct >= 75 ? '#ffc107' : '#28a745'};border-radius:4px;transition:width 0.5s"></div></div><span style="${warning};font-size:12px;font-weight:bold">${pct}%</span></div></td>
-        <td><button class="btn btn-sm btn-warning" onclick="editKeuanganAnggaran(${a.id}, ${a.rencana})">Edit</button></td>
+        <td><button class="btn btn-sm btn-warning" onclick="editKeuanganAnggaran(${a.id}, ${a.rencana})">Edit</button>${role === 'super_admin' ? ` <button class="btn btn-sm btn-danger" onclick="hapusKeuanganAnggaran(${a.id})">Hapus</button>` : ''}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
   } catch (err) {
@@ -279,13 +280,14 @@ async function loadKeuanganIuran() {
     const data = await apiFetch(`${API}/keuangan/iuran`);
     if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>Belum ada data iuran.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr>
-      <th>Anggota</th><th>Periode</th><th>Jumlah</th><th>Status</th><th>Lunas At</th>
+      <th>Anggota</th><th>Periode</th><th>Jumlah</th><th>Status</th><th>Lunas At</th>${role === 'super_admin' ? '<th>Aksi</th>' : ''}
     </tr></thead><tbody>${data.map(i => `<tr>
       <td>${escapeHtml(i.anggota_nama || 'Anggota #' + i.anggota_id)}</td>
       <td>${i.periode_bulan}/${i.periode_tahun}</td>
       <td>Rp ${formatNumber(i.jumlah)}</td>
       <td><span class="badge ${i.status === 'lunas' ? 'badge-success' : 'badge-warning'}">${i.status}</span></td>
       <td>${i.lunas_at ? formatDate(i.lunas_at) : '-'}</td>
+      ${role === 'super_admin' ? `<td><button class="btn btn-sm btn-danger" onclick="hapusKeuanganIuran(${i.id})">Hapus</button></td>` : ''}
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
     container.innerHTML = `<div class="empty-state"><p>Gagal memuat data: ${err.message}</p></div>`;
@@ -388,7 +390,7 @@ async function loadKeuanganUsers() {
       <td>${escapeHtml(u.display_name || '-')}</td>
       <td><span class="badge ${u.role === 'super_admin' ? 'badge-success' : u.role === 'bendahara' ? 'badge-primary' : u.role === 'ketua' ? 'badge-info' : u.role === 'pengurus' ? 'badge-warning' : 'badge-secondary'}">${escapeHtml(u.role)}</span></td>
       <td>${formatDate(u.created_at)}</td>
-      <td><button class="btn btn-sm btn-warning" onclick="ubahRoleUser(${u.id}, '${escapeHtml(u.role)}')">Ubah Role</button></td>
+      <td><button class="btn btn-sm btn-warning" onclick="ubahRoleUser(${u.id}, '${escapeHtml(u.role)}')">Ubah Role</button>${role === 'super_admin' ? ` <button class="btn btn-sm btn-danger" onclick="hapusKeuanganUser(${u.id})">Hapus</button>` : ''}</td>
     </tr>`).join('')}</tbody></table>`;
   } catch (err) {
     container.innerHTML = `<div class="empty-state"><p>Gagal memuat data: ${err.message}</p></div>`;
@@ -465,5 +467,41 @@ function tambahInputBukti() {
   div.style.cssText = 'display:flex;gap:8px;margin-bottom:6px';
   div.innerHTML = '<input type="file" name="bukti" accept="image/*" style="flex:1"><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">&times;</button>';
   container.appendChild(div);
+}
+
+async function hapusKeuanganTransaksi(id) {
+  if (!confirm('Hapus transaksi ini? Tindakan ini tidak bisa dibatalkan.')) return;
+  try {
+    const res = await apiFetch(`${API}/keuangan/transaksi/${id}`, { method: 'DELETE' });
+    alert(res.message);
+    loadKeuanganTransaksi();
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function hapusKeuanganAnggaran(id) {
+  if (!confirm('Hapus anggaran ini?')) return;
+  try {
+    const res = await apiFetch(`${API}/keuangan/anggaran/${id}`, { method: 'DELETE' });
+    alert(res.message);
+    loadKeuanganAnggaran();
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function hapusKeuanganIuran(id) {
+  if (!confirm('Hapus iuran ini?')) return;
+  try {
+    const res = await apiFetch(`${API}/keuangan/iuran/${id}`, { method: 'DELETE' });
+    alert(res.message);
+    loadKeuanganIuran();
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function hapusKeuanganUser(id) {
+  if (!confirm('Hapus user ini? Tindakan ini tidak bisa dibatalkan.')) return;
+  try {
+    const res = await apiFetch(`${API}/keuangan/users/${id}`, { method: 'DELETE' });
+    alert(res.message);
+    loadKeuanganUsers();
+  } catch (err) { alert('Error: ' + err.message); }
 }
 

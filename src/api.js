@@ -471,6 +471,12 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         await supabase.update('users', { role: body.role }, { id: `eq.${s[1]}` });
         return json({ message: 'Role diperbarui.' });
       }
+      if (s[1] && method === 'DELETE') {
+        authorize(['super_admin'], user);
+        if (parseInt(s[1]) === user.id) return error('Tidak bisa menghapus akun sendiri.');
+        await supabase.remove('users', { id: `eq.${s[1]}` });
+        return json({ message: 'User berhasil dihapus.' });
+      }
     }
 
     // Transaksi
@@ -572,6 +578,16 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
           return json({ id: row.id, message: 'Komentar ditambahkan.' });
         }
       }
+
+      if (!act && method === 'DELETE') {
+        authorize(['super_admin'], user);
+        const tx = await supabase.get('transaksi', { id: `eq.${tid}` });
+        if (!tx) return error('Transaksi tidak ditemukan.', 404);
+        if (tx.status === 'terkunci') return error('Transaksi terkunci tidak bisa dihapus.');
+        await supabase.remove('komentar_transaksi', { transaksi_id: `eq.${tid}` });
+        await supabase.remove('transaksi', { id: `eq.${tid}` });
+        return json({ message: 'Transaksi berhasil dihapus.' });
+      }
     }
 
     // Anggaran
@@ -607,6 +623,11 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         await supabase.update('anggaran', { rencana: parseFloat(body.rencana) }, { id: `eq.${aid}` });
         return json({ message: 'Anggaran diperbarui.' });
       }
+      if (aid && method === 'DELETE') {
+        authorize(['super_admin'], user);
+        await supabase.remove('anggaran', { id: `eq.${aid}` });
+        return json({ message: 'Anggaran berhasil dihapus.' });
+      }
     }
 
     // Iuran
@@ -625,6 +646,11 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         }
         const row = await supabase.insert('iuran', { anggota_id: parseInt(body.anggota_id), periode_bulan: parseInt(body.periode_bulan), periode_tahun: parseInt(body.periode_tahun), jumlah: parseFloat(body.jumlah), status: 'lunas', transaksi_id: body.transaksi_id || null, lunas_at: new Date().toISOString() });
         return json({ id: row.id, message: 'Iuran dicatat.' });
+      }
+      if (s[1] && method === 'DELETE') {
+        authorize(['super_admin'], user);
+        await supabase.remove('iuran', { id: `eq.${s[1]}` });
+        return json({ message: 'Iuran berhasil dihapus.' });
       }
     }
 
