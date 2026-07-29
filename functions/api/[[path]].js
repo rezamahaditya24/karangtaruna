@@ -95,9 +95,12 @@ export async function onRequest(context) {
     const isKeuangan = ['keuangan', 'transaksi', 'anggaran', 'iuran', 'users', 'log'].includes(segments[0]);
     const isCsvRoute = segments[0] === 'keuangan' && segments[1] === 'laporan' && segments[2] === 'csv';
     let user = null;
-    if ((isProtected || isKeuangan) && !isCsvRoute) {
+    if (isProtected || isKeuangan) {
       try { user = await authenticate(request, env); }
-      catch (e) { return error(e.message, 401); }
+      catch (e) {
+        if (isCsvRoute) { user = null; }
+        else { return error(e.message, 401); }
+      }
     }
 
     // Helper

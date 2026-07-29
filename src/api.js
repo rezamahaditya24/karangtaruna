@@ -94,9 +94,12 @@ export async function handleAPI(request, env) {
   const isPublicGet = publicTables.includes(segments[0]) && method === 'GET';
   const isAuthRoute = segments[0] === 'auth';
   const isCsvRoute = segments[0] === 'keuangan' && segments[1] === 'laporan' && segments[2] === 'csv';
-  if (!isAuthRoute && !isPublicGet && !isPublicRegister && !isCsvRoute) {
+  if (!isAuthRoute && !isPublicGet && !isPublicRegister) {
     try { user = await authenticate(request, env); }
-    catch (e) { return error(e.message, 401); }
+    catch (e) {
+      if (isCsvRoute) { user = null; }
+      else { return error(e.message, 401); }
+    }
   }
 
   const s = segments.slice(1);
