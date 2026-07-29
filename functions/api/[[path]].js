@@ -258,7 +258,7 @@ export async function onRequest(context) {
           if (isNaN(nominal) || nominal <= 0) return error('Jumlah harus angka positif.');
           let buktiUrl = null;
           if (file) buktiUrl = await uploadToSupabase(file, 'bukti', env);
-          const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrl, status: 'draft', created_by: user.id });
+          const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrl, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5) });
           return json({ id: row.id, message: 'Transaksi berhasil ditambahkan (status: draft).' });
         }
 
@@ -314,7 +314,7 @@ export async function onRequest(context) {
           if (isNaN(nominal) || nominal <= 0) return error('Jumlah harus angka positif.');
           let buktiUrl = tx.bukti_url;
           if (file) buktiUrl = await uploadToSupabase(file, 'bukti', env);
-          const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrl, status: 'draft', created_by: user.id, koreksi_dari_id: parseInt(tid) });
+          const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrl, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5), koreksi_dari_id: parseInt(tid) });
           return json({ id: row.id, message: 'Koreksi berhasil. Menunggu verifikasi.' });
         }
 

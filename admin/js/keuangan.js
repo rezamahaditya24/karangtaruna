@@ -30,8 +30,8 @@ async function loadKeuanganDashboard() {
     const recent = await apiFetch(`${API}/keuangan/transaksi?limit=10`);
     const cont = document.getElementById('keuanganRecentTable');
     if (!recent.length) { cont.innerHTML = '<div class="empty-state"><p>Belum ada transaksi.</p></div>'; return; }
-    cont.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Tipe</th><th>Kategori</th><th>Jumlah</th><th>Status</th></tr></thead><tbody>${recent.map(t => `<tr>
-      <td>${formatDate(t.created_at)}</td>
+    cont.innerHTML = `<table><thead><tr><th>Tgl/Jam</th><th>Tipe</th><th>Kategori</th><th>Jumlah</th><th>Status</th></tr></thead><tbody>${recent.map(t => `<tr>
+      <td>${formatDate(t.created_at)}<br><small style="color:#999">${t.jam || ''}</small></td>
       <td><span class="badge ${t.tipe === 'pemasukan' ? 'badge-success' : 'badge-danger'}">${t.tipe}</span></td>
       <td>${escapeHtml(t.kategori)}</td>
       <td style="color:${t.tipe === 'pemasukan' ? '#28a745' : '#dc3545'}">Rp ${formatNumber(t.jumlah)}</td>
@@ -56,9 +56,9 @@ async function loadKeuanganTransaksi() {
     const data = await apiFetch(url);
     if (!data.length) { container.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr>
-      <th>Tanggal</th><th>Tipe</th><th>Kategori</th><th>Deskripsi</th><th>Jumlah</th><th>Status</th><th>Dibuat Oleh</th><th>Aksi</th>
+      <th>Tgl/Jam</th><th>Tipe</th><th>Kategori</th><th>Deskripsi</th><th>Jumlah</th><th>Status</th><th>Dibuat Oleh</th><th>Aksi</th>
     </tr></thead><tbody>${data.map(t => `<tr>
-      <td>${formatDate(t.created_at)}</td>
+      <td>${formatDate(t.created_at)}<br><small style="color:#999">${t.jam || formatDateTime(t.created_at).split(' ').pop()}</small></td>
       <td><span class="badge ${t.tipe === 'pemasukan' ? 'badge-success' : 'badge-danger'}">${t.tipe}</span></td>
       <td>${escapeHtml(t.kategori)}</td>
       <td>${escapeHtml(t.deskripsi.substring(0, 50))}${t.deskripsi.length > 50 ? '...' : ''}</td>
@@ -130,7 +130,7 @@ async function detailKeuanganTransaksi(id) {
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Dikunci Oleh</td><td>${escapeHtml(t.dikunci_oleh_name || '-')}</td></tr>
           ${t.bukti_url ? `<tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Bukti</td><td><a href="${t.bukti_url}" target="_blank"><img src="${t.bukti_url}" style="max-width:200px;max-height:200px;border-radius:8px;cursor:pointer"></a></td></tr>` : ''}
           ${t.koreksi_dari_id ? `<tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Koreksi Dari</td><td>Transaksi #${t.koreksi_dari_id}</td></tr>` : ''}
-          <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Tanggal Dibuat</td><td>${formatDate(t.created_at)}</td></tr>
+          <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Tanggal/Jam</td><td>${formatDate(t.created_at)} ${t.jam || ''}</td></tr>
         </table>
       </div>`;
     modal.classList.add('show');

@@ -729,6 +729,12 @@ function formatDate(date) {
   return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function formatDateTime(date) {
+  if (!date) return '-';
+  const d = new Date(date);
+  return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
 function applyRoleBasedMenu(role) {
   const allowedPages = getAllowedPages(role);
   document.querySelectorAll('.sidebar nav a').forEach(a => {
