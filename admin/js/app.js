@@ -462,6 +462,10 @@ async function loadKas() {
       <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" style="color:#dc3545">Rp ${formatNumber(data.ringkasan.total_pengeluaran)}</div><div class="stat-label">Total Pengeluaran</div></div>
       <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-number">${data.ringkasan.jumlah_transaksi}</div><div class="stat-label">Jumlah Transaksi</div></div>
     `;
+    if (!data || !data.transaksi) {
+      container.innerHTML = `<div class="empty-state"><p>Belum ada transaksi.</p></div>`;
+      return;
+    }
     const items = data.transaksi;
     if (!items.length) {
       container.innerHTML = `<div class="empty-state"><p>Belum ada transaksi.</p></div>`;

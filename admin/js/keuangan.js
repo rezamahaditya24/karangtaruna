@@ -29,7 +29,7 @@ async function loadKeuanganDashboard() {
       </div>`;
     const recent = await apiFetch(`${API}/keuangan/transaksi?limit=10`);
     const cont = document.getElementById('keuanganRecentTable');
-    if (!recent.length) { cont.innerHTML = '<div class="empty-state"><p>Belum ada transaksi.</p></div>'; return; }
+    if (!recent || !recent.length) { cont.innerHTML = '<div class="empty-state"><p>Belum ada transaksi.</p></div>'; return; }
     cont.innerHTML = `<table><thead><tr><th>Tgl/Jam</th><th>Tipe</th><th>Kategori</th><th>Jumlah</th><th>Status</th></tr></thead><tbody>${recent.map(t => `<tr>
       <td>${formatDate(t.created_at)}<br><small style="color:#999">${t.jam || ''}</small></td>
       <td><span class="badge ${t.tipe === 'pemasukan' ? 'badge-success' : 'badge-danger'}">${t.tipe}</span></td>
@@ -54,7 +54,7 @@ async function loadKeuanganTransaksi() {
     if (status) url += 'status=' + status + '&';
     if (search) url += 'search=' + encodeURIComponent(search) + '&';
     const data = await apiFetch(url);
-    if (!data.length) { container.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi.</p></div>'; return; }
+    if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>Tidak ada transaksi.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr>
       <th>Tgl/Jam</th><th>Tipe</th><th>Kategori</th><th>Deskripsi</th><th>Jumlah</th><th>Status</th><th>Dibuat Oleh</th><th>Aksi</th>
     </tr></thead><tbody>${data.map(t => `<tr>
@@ -113,6 +113,7 @@ function closeKeuanganForm() {
 async function detailKeuanganTransaksi(id) {
   try {
     const data = await apiFetch(`${API}/keuangan/transaksi?limit=1000`);
+    if (!data) { alert('Data gagal dimuat.'); return; }
     const t = data.find(d => d.id === id);
     if (!t) { alert('Transaksi tidak ditemukan.'); return; }
     const modal = document.getElementById('keuanganDetailModal');
@@ -171,6 +172,7 @@ async function tolakKeuanganTransaksi(id) {
 async function koreksiKeuanganTransaksi(id) {
   try {
     const data = await apiFetch(`${API}/keuangan/transaksi?limit=1000`);
+    if (!data) { alert('Data gagal dimuat.'); return; }
     const t = data.find(d => d.id === id);
     if (!t) { alert('Transaksi tidak ditemukan.'); return; }
     document.getElementById('keuanganModalTitle').textContent = 'Koreksi Transaksi #' + id;
@@ -204,7 +206,7 @@ async function loadKeuanganAnggaran() {
   const container = document.getElementById('keuanganAnggaranContainer');
   try {
     const data = await apiFetch(`${API}/keuangan/anggaran`);
-    if (!data.length) { container.innerHTML = '<div class="empty-state"><p>Belum ada anggaran.</p></div>'; return; }
+    if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>Belum ada anggaran.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr>
       <th>Kegiatan</th><th>Judul</th><th>Rencana</th><th>Realisasi</th><th>Sisa</th><th>Progress</th><th>Aksi</th>
     </tr></thead><tbody>${data.map(a => {
@@ -271,7 +273,7 @@ async function loadKeuanganIuran() {
   const container = document.getElementById('keuanganIuranContainer');
   try {
     const data = await apiFetch(`${API}/keuangan/iuran`);
-    if (!data.length) { container.innerHTML = '<div class="empty-state"><p>Belum ada data iuran.</p></div>'; return; }
+    if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>Belum ada data iuran.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr>
       <th>Anggota</th><th>Periode</th><th>Jumlah</th><th>Status</th><th>Lunas At</th>
     </tr></thead><tbody>${data.map(i => `<tr>
@@ -332,7 +334,7 @@ async function loadKomentarKeuangan() {
   try {
     const data = await apiFetch(`${API}/keuangan/transaksi/${komentarTransaksiId}/komentar`);
     const list = document.getElementById('keuanganKomentarList');
-    if (!data.length) { list.innerHTML = '<p style="color:#999;text-align:center;padding:20px">Belum ada komentar. Jadilah yang pertama bertanya.</p>'; return; }
+    if (!data || !data.length) { list.innerHTML = '<p style="color:#999;text-align:center;padding:20px">Belum ada komentar. Jadilah yang pertama bertanya.</p>'; return; }
     list.innerHTML = data.map(k => `
       <div style="background:#f8f9fa;padding:10px 14px;border-radius:8px;margin-bottom:8px">
         <strong style="font-size:13px">${escapeHtml(k.user_name)}</strong>
@@ -358,7 +360,7 @@ async function loadKeuanganLog() {
   const container = document.getElementById('keuanganLogContainer');
   try {
     const data = await apiFetch(`${API}/keuangan/log`);
-    if (!data.length) { container.innerHTML = '<div class="empty-state"><p>Belum ada aktivitas.</p></div>'; return; }
+    if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>Belum ada aktivitas.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Detail</th></tr></thead><tbody>${data.map(l => `<tr>
       <td>${formatDate(l.created_at)}</td>
       <td>${escapeHtml(l.user_name || '-')}</td>
@@ -375,7 +377,7 @@ async function loadKeuanganUsers() {
   const container = document.getElementById('keuanganUsersContainer');
   try {
     const data = await apiFetch(`${API}/keuangan/users`);
-    if (!data.length) { container.innerHTML = '<div class="empty-state"><p>Tidak ada data user.</p></div>'; return; }
+    if (!data || !data.length) { container.innerHTML = '<div class="empty-state"><p>Tidak ada data user.</p></div>'; return; }
     container.innerHTML = `<table><thead><tr><th>ID</th><th>Username</th><th>Nama</th><th>Role</th><th>Tanggal Dibuat</th><th>Aksi</th></tr></thead><tbody>${data.map(u => `<tr>
       <td>${u.id}</td>
       <td>${escapeHtml(u.username)}</td>
@@ -422,6 +424,7 @@ async function ubahRoleUser(id, currentRole) {
 async function loadKegiatanOptions(formId, selectedId) {
   try {
     const data = await apiFetch(`${API}/program`);
+    if (!data) return;
     const selects = document.querySelectorAll(`#${formId} select[name="kegiatan_id"], #${formId} #anggaranKegiatanSelect`);
     selects.forEach(sel => {
       if (!sel) return;
@@ -439,6 +442,7 @@ async function loadKegiatanOptions(formId, selectedId) {
 async function loadAnggotaOptions() {
   try {
     const data = await apiFetch(`${API}/pendaftar`);
+    if (!data) return;
     const sel = document.getElementById('iuranAnggotaSelect');
     if (!sel) return;
     data.forEach(p => {

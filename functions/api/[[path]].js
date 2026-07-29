@@ -23,7 +23,7 @@ async function parseBody(request) {
     }
     return { body, file };
   }
-  if (ct.includes('application/json')) return { body: await request.json(), file: null };
+  if (ct.includes('application/json')) { try { return { body: await request.json(), file: null }; } catch { return { body: {}, file: null }; } }
   const text = await request.text();
   try { return { body: JSON.parse(text), file: null }; }
   catch { return { body: {}, file: null }; }
