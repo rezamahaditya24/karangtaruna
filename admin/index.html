@@ -151,7 +151,7 @@
         <div id="keuanganChart" style="padding:20px;text-align:center;color:#666">Memuat grafik...</div>
       </div>
       <div class="card" style="margin-top:20px">
-        <div class="card-header"><h2>Transaksi Terbaru</h2></div>
+        <div class="card-header"><h2>Transaksi Terbaru</h2><button class="btn btn-sm btn-info" onclick="exportKeuanganDashboard()">📥 Laporan Ringkasan</button></div>
         <div class="table-container" id="keuanganRecentTable"><div class="loading"><div class="spinner"></div><p>Memuat transaksi...</p></div></div>
       </div>
     </div>
@@ -177,6 +177,7 @@
             <input type="text" id="filterSearch" placeholder="Cari transaksi..." style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">
             <button class="btn btn-primary" onclick="loadKeuanganTransaksi()">🔍 Cari</button>
             <button class="btn btn-success" data-create-entity="keuangan/transaksi" onclick="openKeuanganForm()">+ Tambah Transaksi</button>
+            <button class="btn btn-sm btn-info" onclick="exportKeuanganTransaksi()">📥 Laporan</button>
           </div>
         </div>
         <div class="table-container" id="keuanganTableContainer"><div class="loading"><div class="spinner"></div><p>Memuat transaksi...</p></div></div>
@@ -186,7 +187,7 @@
     <!-- Keuangan Anggaran -->
     <div id="page-keuangan-anggaran" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Anggaran per Kegiatan</h2><button class="btn btn-success" data-create-entity="keuangan/anggaran" onclick="openKeuanganAnggaranForm()">+ Tambah Anggaran</button></div>
+        <div class="card-header"><h2>Anggaran per Kegiatan</h2><div style="display:flex;gap:8px"><button class="btn btn-success" data-create-entity="keuangan/anggaran" onclick="openKeuanganAnggaranForm()">+ Tambah Anggaran</button><button class="btn btn-sm btn-info" onclick="exportKeuanganAnggaran()">📥 Laporan</button></div></div>
         <div class="table-container" id="keuanganAnggaranContainer"><div class="loading"><div class="spinner"></div><p>Memuat anggaran...</p></div></div>
       </div>
     </div>
@@ -194,7 +195,7 @@
     <!-- Keuangan Iuran -->
     <div id="page-keuangan-iuran" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Iuran Anggota</h2><button class="btn btn-success" data-create-entity="keuangan/iuran" onclick="openKeuanganIuranForm()">+ Catat Pembayaran</button></div>
+        <div class="card-header"><h2>Iuran Anggota</h2><div style="display:flex;gap:8px"><button class="btn btn-success" data-create-entity="keuangan/iuran" onclick="openKeuanganIuranForm()">+ Catat Pembayaran</button><button class="btn btn-sm btn-info" onclick="exportKeuanganIuran()">📥 Laporan</button></div></div>
         <div class="table-container" id="keuanganIuranContainer"><div class="loading"><div class="spinner"></div><p>Memuat iuran...</p></div></div>
       </div>
     </div>
@@ -202,7 +203,7 @@
     <!-- Keuangan Log -->
     <div id="page-keuangan-log" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Log Aktivitas</h2></div>
+        <div class="card-header"><h2>Log Aktivitas</h2><button class="btn btn-sm btn-info" onclick="exportKeuanganLog()">📥 Laporan</button></div>
         <div class="table-container" id="keuanganLogContainer"><div class="loading"><div class="spinner"></div><p>Memuat log...</p></div></div>
       </div>
     </div>
@@ -210,7 +211,7 @@
     <!-- Keuangan Users -->
     <div id="page-keuangan-users" class="page-section">
       <div class="card">
-        <div class="card-header"><h2>Manajemen User & Role</h2><button class="btn btn-success btn-sm" data-create-entity="keuangan/users" onclick="openTambahUser()">+ Tambah User</button></div>
+        <div class="card-header"><h2>Manajemen User & Role</h2><div style="display:flex;gap:8px"><button class="btn btn-success btn-sm" data-create-entity="keuangan/users" onclick="openTambahUser()">+ Tambah User</button><button class="btn btn-sm btn-info" onclick="exportKeuanganUsers()">📥 Laporan</button></div></div>
         <div class="table-container" id="keuanganUsersContainer"><div class="loading"><div class="spinner"></div><p>Memuat data user...</p></div></div>
       </div>
     </div>

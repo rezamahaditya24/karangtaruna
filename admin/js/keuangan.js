@@ -6,27 +6,41 @@ async function loadKeuanganDashboard() {
       <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-number" style="color:#28a745">Rp ${formatNumber(data.saldo_kas)}</div><div class="stat-label">Saldo Kas Umum</div></div>
       <div class="stat-card"><div class="stat-icon">🔒</div><div class="stat-number" style="color:#e67e22">Rp ${formatNumber(data.saldo_penting)}</div><div class="stat-label">Saldo Dana Penting</div></div>
       <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-number" style="color:#6c5ce7">Rp ${formatNumber(data.saldo)}</div><div class="stat-label">Total Kas</div></div>
-      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-number" style="color:#28a745">Rp ${formatNumber(data.bulanIni.pemasukan)}</div><div class="stat-label">Pemasukan Bulan Ini</div></div>
-      <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" style="color:#dc3545">Rp ${formatNumber(data.bulanIni.pengeluaran)}</div><div class="stat-label">Pengeluaran Bulan Ini</div></div>
+      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-number" style="color:#28a745">Rp ${formatNumber(data.bulanIni.pemasukan_kas)}</div><div class="stat-label">Pemasukan Kas</div></div>
+      <div class="stat-card"><div class="stat-icon">📉</div><div class="stat-number" style="color:#dc3545">Rp ${formatNumber(data.bulanIni.pengeluaran_kas)}</div><div class="stat-label">Pengeluaran Kas</div></div>
+      <div class="stat-card"><div class="stat-icon">💚</div><div class="stat-number" style="color:#e67e22">Rp ${formatNumber(data.bulanIni.pemasukan_penting)}</div><div class="stat-label">Pemasukan Penting</div></div>
+      <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-number" style="color:#e67e22">Rp ${formatNumber(data.bulanIni.pengeluaran_penting)}</div><div class="stat-label">Pengeluaran Penting</div></div>
       <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-number">${data.total}</div><div class="stat-label">Total Transaksi</div></div>
       <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-number" style="color:#ffc107">${data.perluVerifikasi}</div><div class="stat-label">Perlu Verifikasi</div></div>
     `;
     const chartEl = document.getElementById('keuanganChart');
-    const pem = data.bulanIni.pemasukan, peng = data.bulanIni.pengeluaran;
-    const total = pem + peng || 1;
+    const pk = data.bulanIni.pemasukan_kas, pk_ = data.bulanIni.pengeluaran_kas;
+    const pp = data.bulanIni.pemasukan_penting, pp_ = data.bulanIni.pengeluaran_penting;
+    const total = pk + pk_ + pp + pp_ || 1;
     chartEl.innerHTML = `
-      <div style="max-width:400px;margin:0 auto">
-        <div style="display:flex;align-items:center;margin-bottom:10px">
+      <div style="max-width:480px;margin:0 auto">
+        <div style="margin-bottom:15px;font-weight:bold;font-size:14px;color:#555">📊 Breakdown Bulan Ini</div>
+        <div style="display:flex;align-items:center;margin-bottom:6px">
           <div style="width:12px;height:12px;background:#28a745;border-radius:3px;margin-right:8px"></div>
-          <span>Pemasukan: Rp ${formatNumber(pem)} (${Math.round(pem/total*100)}%)</span>
+          <span style="flex:1">Pemasukan Kas</span><span style="font-weight:bold">Rp ${formatNumber(pk)}</span>
+        </div>
+        <div style="display:flex;align-items:center;margin-bottom:6px">
+          <div style="width:12px;height:12px;background:#dc3545;border-radius:3px;margin-right:8px"></div>
+          <span style="flex:1">Pengeluaran Kas</span><span style="font-weight:bold">Rp ${formatNumber(pk_)}</span>
+        </div>
+        <div style="display:flex;align-items:center;margin-bottom:6px">
+          <div style="width:12px;height:12px;background:#81c784;border-radius:3px;margin-right:8px"></div>
+          <span style="flex:1">Pemasukan Penting</span><span style="font-weight:bold">Rp ${formatNumber(pp)}</span>
+        </div>
+        <div style="display:flex;align-items:center;margin-bottom:10px">
+          <div style="width:12px;height:12px;background:#e67e22;border-radius:3px;margin-right:8px"></div>
+          <span style="flex:1">Pengeluaran Penting</span><span style="font-weight:bold">Rp ${formatNumber(pp_)}</span>
         </div>
         <div style="height:30px;background:#eee;border-radius:15px;overflow:hidden;display:flex">
-          <div style="height:100%;background:#28a745;width:${pem/total*100}%;transition:width 0.5s"></div>
-          <div style="height:100%;background:#dc3545;width:${peng/total*100}%;transition:width 0.5s"></div>
-        </div>
-        <div style="display:flex;align-items:center;margin-top:10px">
-          <div style="width:12px;height:12px;background:#dc3545;border-radius:3px;margin-right:8px"></div>
-          <span>Pengeluaran: Rp ${formatNumber(peng)} (${Math.round(peng/total*100)}%)</span>
+          <div style="height:100%;background:#28a745;width:${pk/total*100}%;transition:width 0.5s" title="Pemasukan Kas"></div>
+          <div style="height:100%;background:#dc3545;width:${pk_/total*100}%;transition:width 0.5s" title="Pengeluaran Kas"></div>
+          <div style="height:100%;background:#81c784;width:${pp/total*100}%;transition:width 0.5s" title="Pemasukan Penting"></div>
+          <div style="height:100%;background:#e67e22;width:${pp_/total*100}%;transition:width 0.5s" title="Pengeluaran Penting"></div>
         </div>
       </div>`;
     const recent = await apiFetch(`${API}/keuangan/transaksi?limit=10`);
@@ -71,7 +85,7 @@ async function loadKeuanganTransaksi() {
       <td>
         <button class="btn btn-sm btn-primary" onclick="detailKeuanganTransaksi(${t.id})">Detail${(() => { try { const urls = t.bukti_urls ? JSON.parse(t.bukti_urls) : (t.bukti_url ? [t.bukti_url] : []); return urls.length > 1 ? ` (${urls.length} img)` : urls.length === 1 ? ' 📷' : ''; } catch { return ''; } })()}</button>
         ${t.status === 'draft' ? `<button class="btn btn-sm btn-success" onclick="verifikasiKeuanganTransaksi(${t.id})">Verifikasi</button> <button class="btn btn-sm btn-danger" onclick="tolakKeuanganTransaksi(${t.id})">Tolak</button>` : ''}
-        ${t.status === 'diverifikasi' ? `<button class="btn btn-sm btn-primary" onclick="kunciKeuanganTransaksi(${t.id})">Kunci</button>` : ''}
+        ${t.status === 'diverifikasi' && ['super_admin', 'ketua'].includes(role) ? `<button class="btn btn-sm btn-primary" onclick="kunciKeuanganTransaksi(${t.id})">Kunci</button>` : ''}
         ${t.status !== 'terkunci' && t.status !== 'ditolak' ? `<button class="btn btn-sm btn-warning" onclick="koreksiKeuanganTransaksi(${t.id})">Koreksi</button>` : ''}
         ${role === 'super_admin' && t.status !== 'terkunci' ? `<button class="btn btn-sm btn-danger" onclick="hapusKeuanganTransaksi(${t.id})">Hapus</button>` : ''}
         <button class="btn btn-sm btn-info" onclick="bukaKomentarKeuangan(${t.id})">💬</button>
@@ -512,6 +526,96 @@ async function hapusKeuanganUser(id) {
     const res = await apiFetch(`${API}/keuangan/users/${id}`, { method: 'DELETE' });
     alert(res.message);
     loadKeuanganUsers();
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+// ====================== EXPORT LAPORAN CSV ======================
+function downloadCSV(filename, headers, rows) {
+  const csv = [headers.join(','), ...rows.map(r => r.map(c => {
+    const s = String(c == null ? '' : c);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(','))].join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function exportKeuanganTransaksi() {
+  try {
+    const data = await apiFetch(`${API}/keuangan/transaksi`);
+    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+    downloadCSV('laporan-transaksi.csv',
+      ['Tanggal', 'Jam', 'Tipe', 'Kategori', 'Jumlah', 'Deskripsi', 'Status', 'Dana', 'Dibuat Oleh'],
+      data.map(t => [formatDate(t.created_at), t.jam || '', t.tipe, t.kategori, t.jumlah, (t.deskripsi||'').replace(/,/g,';'), t.status, !t.fund || t.fund === 'kas' ? 'Kas' : 'Penting', t.created_by_name || '-'])
+    );
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function exportKeuanganAnggaran() {
+  try {
+    const data = await apiFetch(`${API}/keuangan/anggaran`);
+    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+    downloadCSV('laporan-anggaran.csv',
+      ['Kegiatan', 'Judul', 'Rencana', 'Realisasi', 'Sisa', 'Progress (%)'],
+      data.map(a => [a.kegiatan_nama || '-', a.judul, a.rencana, a.realisasi, a.rencana - a.realisasi, a.rencana > 0 ? Math.round(a.realisasi / a.rencana * 100) : 0])
+    );
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function exportKeuanganIuran() {
+  try {
+    const data = await apiFetch(`${API}/keuangan/iuran`);
+    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+    downloadCSV('laporan-iuran.csv',
+      ['Anggota', 'Periode', 'Jumlah', 'Status', 'Lunas At'],
+      data.map(i => [i.anggota_nama || 'Anggota #' + i.anggota_id, i.periode_bulan + '/' + i.periode_tahun, i.jumlah, i.status, i.lunas_at ? formatDate(i.lunas_at) : '-'])
+    );
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function exportKeuanganLog() {
+  try {
+    const data = await apiFetch(`${API}/keuangan/log`);
+    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+    downloadCSV('laporan-log-aktivitas.csv',
+      ['Waktu', 'User', 'Aksi', 'Detail'],
+      data.map(l => [formatDate(l.created_at), l.user_name || '-', l.aksi, l.detail || ''])
+    );
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function exportKeuanganUsers() {
+  try {
+    const data = await apiFetch(`${API}/keuangan/users`);
+    if (!data || !data.length) { alert('Tidak ada data untuk diexport.'); return; }
+    downloadCSV('laporan-users.csv',
+      ['ID', 'Username', 'Nama', 'Role', 'Tanggal Dibuat'],
+      data.map(u => [u.id, u.username, u.display_name || '-', u.role, formatDate(u.created_at)])
+    );
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+async function exportKeuanganDashboard() {
+  try {
+    const data = await apiFetch(`${API}/keuangan/ringkasan`);
+    downloadCSV('laporan-ringkasan-keuangan.csv',
+      ['Metrik', 'Nilai'],
+      [
+        ['Saldo Kas Umum', data.saldo_kas],
+        ['Saldo Dana Penting', data.saldo_penting],
+        ['Total Kas', data.saldo],
+        ['Total Transaksi', data.total],
+        ['Perlu Verifikasi', data.perluVerifikasi],
+        ['Pemasukan Kas (Bulan Ini)', data.bulanIni.pemasukan_kas],
+        ['Pengeluaran Kas (Bulan Ini)', data.bulanIni.pengeluaran_kas],
+        ['Pemasukan Penting (Bulan Ini)', data.bulanIni.pemasukan_penting],
+        ['Pengeluaran Penting (Bulan Ini)', data.bulanIni.pengeluaran_penting]
+      ]
+    );
   } catch (err) { alert('Error: ' + err.message); }
 }
 

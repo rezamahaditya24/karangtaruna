@@ -241,7 +241,7 @@ function canVerifyTransaksi() {
 }
 
 function canLockTransaksi() {
-  return role === 'super_admin';
+  return ['super_admin', 'ketua'].includes(role);
 }
 
 function canCorrectTransaksi() {

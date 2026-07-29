@@ -524,6 +524,61 @@ table tr:hover {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .modal-content {
+    padding: 20px;
+    width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .topbar {
+    padding: 10px 12px;
+  }
+  .topbar h2 {
+    font-size: 16px;
+  }
+  .card-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .card-header h2 {
+    font-size: 15px;
+  }
+  .card-header > div {
+    flex-wrap: wrap;
+  }
+  .modal-content {
+    padding: 15px;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    min-height: 100vh;
+    max-height: 100vh;
+  }
+  table {
+    font-size: 12px;
+  }
+  table th, table td {
+    padding: 6px 8px;
+  }
+  .btn {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+  .btn-sm {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  .stat-card {
+    padding: 12px;
+  }
+  .stat-number {
+    font-size: 18px;
+  }
 }
 
 /* Overlay for mobile sidebar */

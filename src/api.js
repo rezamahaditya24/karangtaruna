@@ -446,7 +446,9 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
       const saldo_penting = hitung(all.filter(t => t.fund === 'penting'));
       const now = new Date();
       const bulanIni = all.filter(t => { const d = new Date(t.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && t.status !== 'ditolak'; });
-      return json({ saldo, saldo_kas, saldo_penting, total: all.length, perluVerifikasi: all.filter(t => t.status === 'draft').length, bulanIni: { pemasukan: bulanIni.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), pengeluaran: bulanIni.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0) } });
+      const bulanIniKas = bulanIni.filter(t => !t.fund || t.fund === 'kas');
+      const bulanIniPenting = bulanIni.filter(t => t.fund === 'penting');
+      return json({ saldo, saldo_kas, saldo_penting, total: all.length, perluVerifikasi: all.filter(t => t.status === 'draft').length, bulanIni: { pemasukan: bulanIni.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), pengeluaran: bulanIni.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0), pemasukan_kas: bulanIniKas.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), pengeluaran_kas: bulanIniKas.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0), pemasukan_penting: bulanIniPenting.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + parseFloat(t.jumlah), 0), pengeluaran_penting: bulanIniPenting.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + parseFloat(t.jumlah), 0) } });
     }
 
     // Log
@@ -540,7 +542,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
       }
 
       if (act === 'kunci') {
-        authorize(['super_admin'], user);
+        authorize(['super_admin', 'ketua'], user);
         const tx = await supabase.get('transaksi', { id: `eq.${tid}` });
         if (!tx) return error('Transaksi tidak ditemukan.', 404);
         if (tx.status !== 'diverifikasi') return error('Hanya transaksi diverifikasi yang bisa dikunci.');
