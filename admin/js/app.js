@@ -214,7 +214,11 @@ async function apiFetch(url, options = {}) {
 
 function getAllowedPages(role) {
   if (role === 'super_admin') return null;
-  return ['dashboard', 'kas', 'keuangan', 'keuangan-transaksi', 'keuangan-anggaran', 'keuangan-iuran'];
+  const keuanganPages = ['keuangan', 'keuangan-transaksi', 'keuangan-anggaran', 'keuangan-iuran', 'keuangan-log', 'keuangan-users'];
+  if (['bendahara', 'ketua'].includes(role)) {
+    return ['dashboard', 'kas'].concat(keuanganPages);
+  }
+  return ['dashboard', 'kas'];
 }
 
 function canViewPage(page) {
