@@ -29,17 +29,17 @@ async function parseBody(request) {
   if (ct.includes('multipart/form-data')) {
     const fd = await request.formData();
     const body = {};
-    let file = null;
+    const files = [];
     for (const [k, v] of fd.entries()) {
-      if (v instanceof File) file = { name: k, file: v };
-      else body[k] = v;
+      if (v instanceof File && v.size > 0) files.push({ name: k, file: v });
+      else if (!(v instanceof File)) body[k] = v;
     }
-    return { body, file };
+    return { body, file: files[0] || null, files };
   }
-  if (ct.includes('application/json')) { try { return { body: await request.json(), file: null }; } catch { return { body: {}, file: null }; } }
+  if (ct.includes('application/json')) { try { return { body: await request.json(), file: null, files: [] }; } catch { return { body: {}, file: null, files: [] }; } }
   const text = await request.text();
-  try { return { body: JSON.parse(text), file: null }; }
-  catch { return { body: {}, file: null }; }
+  try { return { body: JSON.parse(text), file: null, files: [] }; }
+  catch { return { body: {}, file: null, files: [] }; }
 }
 
 async function uploadToSupabase(file, folder, env) {
@@ -370,7 +370,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
       return json({ id: row.id, message: 'Program berhasil ditambahkan.' });
     }
     if (id && method === 'PUT') { await supabase.update('program', { judul: body.judul, deskripsi: body.deskripsi, tipe: body.tipe, jadwal: body.jadwal, icon: body.icon }, { id: `eq.${id}` }); return json({ message: 'Program berhasil diperbarui.' }); }
-    if (id && method === 'DELETE') { await supabase.remove('program', { id: `eq.${id}` }); return json({ message: 'Program berhasil dihapus.' }); }
+    if (id && method === 'DELETE') { await supabase.update('anggaran', { kegiatan_id: null }, { kegiatan_id: `eq.${id}` }); await supabase.update('transaksi', { kegiatan_id: null }, { kegiatan_id: `eq.${id}` }); await supabase.remove('program', { id: `eq.${id}` }); return json({ message: 'Program berhasil dihapus.' }); }
   }
 
   // ===================== UMKM =====================
@@ -428,7 +428,7 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
       await supabase.insert('pendaftar', { nama_lengkap: body.nama_lengkap, usia: parseInt(body.usia) || null, no_hp: body.no_hp, alamat: body.alamat, pekerjaan: body.pekerjaan || '', alasan_bergabung: body.alasan_bergabung || '' });
       return json({ message: 'Pendaftaran berhasil.' });
     }
-    if (id && method === 'DELETE') { await supabase.remove('pendaftar', { id: `eq.${id}` }); return json({ message: 'Pendaftar berhasil dihapus.' }); }
+    if (id && method === 'DELETE') { await supabase.remove('iuran', { anggota_id: `eq.${id}` }); await supabase.remove('pendaftar', { id: `eq.${id}` }); return json({ message: 'Pendaftar berhasil dihapus.' }); }
   }
 
   // ===================== KEUANGAN =====================
@@ -495,9 +495,11 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         if (!body.tipe || !body.kategori || !body.jumlah || !body.deskripsi) return error('Lengkapi semua field wajib.');
         const nominal = parseFloat(body.jumlah);
         if (isNaN(nominal) || nominal <= 0) return error('Jumlah harus angka positif.');
-        let buktiUrl = null;
-        if (file) buktiUrl = await uploadToSupabase(file, 'bukti', env);
-        const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrl, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5) });
+        let buktiUrls = [];
+        if (files && files.length > 0) {
+          for (const f of files) { const url = await uploadToSupabase(f, 'bukti', env); if (url) buktiUrls.push(url); }
+        }
+        const row = await supabase.insert('transaksi', { tipe: body.tipe, kategori: body.kategori, jumlah: nominal, deskripsi: body.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5) });
         return json({ id: row.id, message: 'Transaksi berhasil ditambahkan (status: draft).' });
       }
 
@@ -551,9 +553,11 @@ Saat menjawab, gunakan konteks halaman aktif dan role user. Jika pertanyaan meny
         if (!body.tipe || !body.kategori || !body.jumlah || !body.deskripsi) return error('Lengkapi semua field wajib.');
         const nominal = parseFloat(body.jumlah);
         if (isNaN(nominal) || nominal <= 0) return error('Jumlah harus angka positif.');
-        let buktiUrl = tx.bukti_url;
-        if (file) buktiUrl = await uploadToSupabase(file, 'bukti', env);
-        const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrl, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5), koreksi_dari_id: parseInt(tid) });
+        let buktiUrls = tx.bukti_urls ? JSON.parse(tx.bukti_urls) : (tx.bukti_url ? [tx.bukti_url] : []);
+        if (files && files.length > 0) {
+          for (const f of files) { const url = await uploadToSupabase(f, 'bukti', env); if (url) buktiUrls.push(url); }
+        }
+        const row = await supabase.insert('transaksi', { tipe: body.tipe || tx.tipe, kategori: body.kategori || tx.kategori, jumlah: nominal || tx.jumlah, deskripsi: body.deskripsi || tx.deskripsi, bukti_url: buktiUrls[0] || null, bukti_urls: buktiUrls.length > 0 ? JSON.stringify(buktiUrls) : null, status: 'draft', created_by: user.id, jam: new Date().toTimeString().slice(0, 5), koreksi_dari_id: parseInt(tid) });
         return json({ id: row.id, message: 'Koreksi berhasil. Menunggu verifikasi.' });
       }
 

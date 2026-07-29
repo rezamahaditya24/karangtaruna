@@ -66,7 +66,7 @@ async function loadKeuanganTransaksi() {
       <td><span class="badge ${t.status === 'terkunci' ? 'badge-success' : t.status === 'diverifikasi' ? 'badge-primary' : t.status === 'ditolak' ? 'badge-danger' : 'badge-warning'}">${t.status}</span></td>
       <td>${escapeHtml(t.created_by_name || '-')}</td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="detailKeuanganTransaksi(${t.id})">Detail</button>
+        <button class="btn btn-sm btn-primary" onclick="detailKeuanganTransaksi(${t.id})">Detail${(() => { try { const urls = t.bukti_urls ? JSON.parse(t.bukti_urls) : (t.bukti_url ? [t.bukti_url] : []); return urls.length > 1 ? ` (${urls.length} img)` : urls.length === 1 ? ' 📷' : ''; } catch { return ''; } })()}</button>
         ${t.status === 'draft' ? `<button class="btn btn-sm btn-success" onclick="verifikasiKeuanganTransaksi(${t.id})">Verifikasi</button> <button class="btn btn-sm btn-danger" onclick="tolakKeuanganTransaksi(${t.id})">Tolak</button>` : ''}
         ${t.status === 'diverifikasi' ? `<button class="btn btn-sm btn-primary" onclick="kunciKeuanganTransaksi(${t.id})">Kunci</button>` : ''}
         ${t.status !== 'terkunci' && t.status !== 'ditolak' ? `<button class="btn btn-sm btn-warning" onclick="koreksiKeuanganTransaksi(${t.id})">Koreksi</button>` : ''}
@@ -92,7 +92,9 @@ function openKeuanganForm() {
     <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" min="1" required></div>
     <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required placeholder="Untuk apa transaksi ini? Terkait kegiatan apa?"></textarea></div>
     <div class="form-group"><label>Kegiatan (opsional, ketik manual)</label><input type="text" name="kegiatan" placeholder="Misal: Dana Lomba 17 Agustus, Pentas Seni, dll"></div>
-    <div class="form-group"><label>Upload Bukti (foto struk/nota)</label><input type="file" name="bukti" accept="image/*"></div>
+    <div class="form-group"><label>Upload Bukti (foto struk/nota)</label>
+      <div id="buktiUploadContainer"><div style="display:flex;gap:8px;margin-bottom:6px"><input type="file" name="bukti" accept="image/*" style="flex:1"><button type="button" class="btn btn-sm btn-success" onclick="tambahInputBukti()">+</button></div></div>
+    </div>
   `;
   document.getElementById('keuanganModal').classList.add('show');
   document.getElementById('keuanganForm').onsubmit = async (e) => {
@@ -129,7 +131,7 @@ async function detailKeuanganTransaksi(id) {
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Dibuat Oleh</td><td>${escapeHtml(t.created_by_name || '-')}</td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Diverifikasi Oleh</td><td>${escapeHtml(t.diverifikasi_oleh_name || '-')}</td></tr>
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Dikunci Oleh</td><td>${escapeHtml(t.dikunci_oleh_name || '-')}</td></tr>
-          ${t.bukti_url ? `<tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Bukti</td><td><a href="${t.bukti_url}" target="_blank"><img src="${t.bukti_url}" style="max-width:200px;max-height:200px;border-radius:8px;cursor:pointer"></a></td></tr>` : ''}
+          ${t.bukti_urls || t.bukti_url ? `<tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Bukti</td><td><div style="display:flex;flex-wrap:wrap;gap:8px">${(() => { try { const urls = t.bukti_urls ? JSON.parse(t.bukti_urls) : (t.bukti_url ? [t.bukti_url] : []); return urls.map(u => `<a href="${u}" target="_blank"><img src="${u}" style="max-width:150px;max-height:150px;border-radius:8px;cursor:pointer;object-fit:cover"></a>`).join(''); } catch { return `<a href="${t.bukti_url}" target="_blank"><img src="${t.bukti_url}" style="max-width:200px;max-height:200px;border-radius:8px;cursor:pointer"></a>`; } })()}</div></td></tr>` : ''}
           ${t.koreksi_dari_id ? `<tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Koreksi Dari</td><td>Transaksi #${t.koreksi_dari_id}</td></tr>` : ''}
           <tr><td style="font-weight:bold;padding:6px 12px 6px 0;color:#666">Tanggal/Jam</td><td>${formatDate(t.created_at)} ${t.jam || ''}</td></tr>
         </table>
@@ -185,7 +187,9 @@ async function koreksiKeuanganTransaksi(id) {
       <div class="form-group"><label>Jumlah (Rp)</label><input type="number" name="jumlah" value="${t.jumlah}" min="1" required></div>
       <div class="form-group"><label>Deskripsi</label><textarea name="deskripsi" rows="3" required>${escapeHtml(t.deskripsi)}</textarea></div>
       <div class="form-group"><label>Kegiatan (opsional)</label><input type="text" name="kegiatan" value="${escapeHtml(t.kegiatan || '')}" placeholder="Misal: Dana Lomba 17 Agustus"></div>
-      <div class="form-group"><label>Upload Bukti Baru (opsional)</label><input type="file" name="bukti" accept="image/*"></div>
+      <div class="form-group"><label>Upload Bukti Baru (opsional)</label>
+        <div id="buktiUploadContainer"><div style="display:flex;gap:8px;margin-bottom:6px"><input type="file" name="bukti" accept="image/*" style="flex:1"><button type="button" class="btn btn-sm btn-success" onclick="tambahInputBukti()">+</button></div></div>
+      </div>
     `;
     document.getElementById('keuanganModal').classList.add('show');
     document.getElementById('keuanganForm').onsubmit = async (e) => {
@@ -452,5 +456,14 @@ async function loadAnggotaOptions() {
       sel.appendChild(opt);
     });
   } catch (_) {}
+}
+
+function tambahInputBukti() {
+  const container = document.getElementById('buktiUploadContainer');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:6px';
+  div.innerHTML = '<input type="file" name="bukti" accept="image/*" style="flex:1"><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">&times;</button>';
+  container.appendChild(div);
 }
 

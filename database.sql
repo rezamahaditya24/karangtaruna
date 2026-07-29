@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS transaksi (
   kegiatan VARCHAR(255),
   kegiatan_id INT,
   bukti_url TEXT,
+  bukti_urls TEXT,
   status VARCHAR(50) DEFAULT 'draft',
   created_by INT,
   diverifikasi_oleh INT,
